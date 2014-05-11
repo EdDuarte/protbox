@@ -1,4 +1,4 @@
-Protbox - cloud storage security project
+![Logo](imgs/protbox-splash.png)
 =======
 
 **Multi-platform application** that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
