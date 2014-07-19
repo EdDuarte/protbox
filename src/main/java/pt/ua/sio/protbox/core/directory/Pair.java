@@ -1,17 +1,16 @@
 package pt.ua.sio.protbox.core.directory;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
  *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
  * @version 1.0
  */
-public class PbxEntry implements Serializable {
+public class Pair implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final PbxFolder parentFolder;
+    private final PairFolder parentFolder;
     private final String encodedName;
     private final String realName;
     boolean hidden;
@@ -21,7 +20,7 @@ public class PbxEntry implements Serializable {
      * An entry has a parentFolder, an encodedName and the realName.
      * By default, a entry is not hidden
      */
-    PbxEntry(final PbxFolder parentFolder, final String encodedName, final String realName) {
+    Pair(final PairFolder parentFolder, final String encodedName, final String realName) {
         this.parentFolder = parentFolder;
         this.encodedName = encodedName;
         this.realName = realName;
@@ -31,7 +30,7 @@ public class PbxEntry implements Serializable {
     /**
      * The parentFolder is a Folder Entry(PbxFolder).
      */
-    public PbxFolder parentFolder() {
+    public PairFolder parentFolder() {
         return parentFolder;
     }
 
@@ -112,8 +111,8 @@ public class PbxEntry implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if(obj instanceof PbxEntry) {
-            PbxEntry pe = (PbxEntry) obj;
+        if(obj instanceof Pair) {
+            Pair pe = (Pair) obj;
             return this==pe || this.relativeRealPath().equalsIgnoreCase(pe.relativeRealPath()) &&
                     this.relativeEncodedPath().equalsIgnoreCase(pe.relativeEncodedPath());
         }

@@ -5,36 +5,36 @@ import java.util.*;
 
 /**
  * PbxFolder is a entry that structures a folder in the Directory. Other than having the same
- * variables as {@link PbxEntry}, this is also represented by a list of other folders and a list
+ * variables as {@link ProtboxPair}, this is also represented by a list of other folders and a list
  * of other files contained in this folder.
  *
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
  *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
  * @version 1.0
  */
-public final class PbxFolder extends PbxEntry implements Serializable {
+public final class PairFolder extends ProtboxPair implements Serializable {
     private static final long serialVersionUID = 1L;
-    Set<PbxFolder> folders;
+    Set<PairFolder> folders;
     Set<PbxFile> files;
 
-    PbxFolder(final PbxFolder parentFolder, final String encodedName, final String realName) {
+    PairFolder(final PairFolder parentFolder, final String encodedName, final String realName) {
         super(parentFolder, encodedName, realName);
         folders = new LinkedHashSet<>();
         files = new LinkedHashSet<>();
     }
 
-    public PbxFolder addFolder(PbxFolder f) {
+    public PairFolder addFolder(PairFolder f) {
         folders.add(f);
         return this;
     }
 
-    public PbxFolder addFile(PbxFile f) {
+    public PairFolder addFile(PbxFile f) {
         files.add(f);
         return this;
     }
 
-    void removeEntry(PbxEntry e){
-        if(e instanceof PbxFolder)
+    void removeEntry(ProtboxPair e){
+        if(e instanceof PairFolder)
             folders.remove(e);
         else if(e instanceof PbxFile)
             files.remove(e);
@@ -51,9 +51,9 @@ public final class PbxFolder extends PbxEntry implements Serializable {
         return null;
     }
 
-    public PbxFolder goToFolder(String foldername) {
+    public PairFolder goToFolder(String foldername) {
         if(folders.size()!=0){
-            for(PbxFolder f : folders){
+            for(PairFolder f : folders){
                 if(f.realName().equalsIgnoreCase(foldername) ||
                         f.encodedName().equalsIgnoreCase(foldername))
                     return f;

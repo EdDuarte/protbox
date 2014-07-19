@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.gui;
+package pt.ua.sio.protbox.ui;
 
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.util.AWTUtils;

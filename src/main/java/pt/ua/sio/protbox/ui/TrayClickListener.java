@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.gui;
+package pt.ua.sio.protbox.ui;
 
 import javax.swing.*;
 import java.awt.*;

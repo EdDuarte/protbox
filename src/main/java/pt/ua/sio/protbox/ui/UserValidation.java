@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.gui;
+package pt.ua.sio.protbox.ui;
 
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;

@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.gui;
+package pt.ua.sio.protbox.ui;
 
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;

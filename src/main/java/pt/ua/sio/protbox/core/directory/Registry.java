@@ -9,9 +9,9 @@ import pt.ua.sio.protbox.core.synchronization.Sync;
 import pt.ua.sio.protbox.core.watcher.DirectoryWatcher;
 import pt.ua.sio.protbox.core.watcher.SpecificWatcher;
 import pt.ua.sio.protbox.exception.ProtException;
-import pt.ua.sio.protbox.gui.TrayApplet;
-import pt.ua.sio.protbox.gui.UserValidation;
-import pt.ua.sio.protbox.util.referencewrappers.DuoReference;
+import pt.ua.sio.protbox.ui.TrayApplet;
+import pt.ua.sio.protbox.ui.UserValidation;
+import pt.ua.sio.protbox.util.DuoRef;
 
 import javax.crypto.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -27,11 +27,11 @@ import java.util.List;
  *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
  * @version 1.0
  */
-public final class Directory implements Serializable {
+public final class Registry implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private transient static org.slf4j.Logger logger = LoggerFactory.getLogger(Directory.class);
+    private transient static org.slf4j.Logger logger = LoggerFactory.getLogger(Registry.class);
 
     /**
      * The configured SHARED shared folder where the encrypted files will be.
@@ -39,14 +39,14 @@ public final class Directory implements Serializable {
     public final String SHARED_PATH;
 
     /**
-     * The configured OUTPUT folder where every file from the SHARED folder will be stored in decrypted form.
+     * The configured PROT folder where every file from the SHARED folder will be stored in decrypted form.
      */
     public String OUTPUT_PATH;
 
     /**
      * The initial entry that links to every other entry through a node-based implementation.
      */
-    private PbxFolder root;
+    private PairFolder root;
 
     /**
      * The user with local access to this directory. When this directory is serialized, the serialized file is
@@ -103,7 +103,7 @@ public final class Directory implements Serializable {
     /**
      * Constructs a new Directory structure that links the Shared and the Output folders using entries.
      */
-    public Directory(User accessUser, String sharedPath, String outputPath, String algorithm, SecretKey key, boolean isANewDirectory) throws ProtException {
+    public Registry(User accessUser, String sharedPath, String outputPath, String algorithm, SecretKey key, boolean isANewDirectory) throws ProtException {
         File sharedPathFile = new File(sharedPath);
         File outputPathFile = new File(outputPath);
         this.accessUser = accessUser;
@@ -113,7 +113,7 @@ public final class Directory implements Serializable {
         this.KEY = key;
         this.SKIP_WATCHER_ENTRIES = new ArrayList<>();
         this.initialized = false;
-        this.root = new PbxFolder(null, "", "");
+        this.root = new PairFolder(null, "", "");
         if(isANewDirectory){
             try{
                 Constants.moveContentsFromDirToDir(sharedPathFile, outputPathFile);
@@ -151,7 +151,7 @@ public final class Directory implements Serializable {
             final Path dropPath = Paths.get(SHARED_PATH);
             final Path protPath = Paths.get(OUTPUT_PATH);
             dropboxWatcher = new Thread(new DirectoryWatcher(this, Source.SHARED, dropPath));
-            protboxWatcher = new Thread(new DirectoryWatcher(this, Source.OUTPUT, protPath));
+            protboxWatcher = new Thread(new DirectoryWatcher(this, Source.PROT, protPath));
             dropboxWatcher.start();
             protboxWatcher.start();
 
@@ -162,7 +162,7 @@ public final class Directory implements Serializable {
                     if(detectedFile.getName().contains("»ask") &&
                             detectedFile.getName().substring(4).equalsIgnoreCase(accessUser.getId())){
                         Thread.sleep(2000);
-                        UserValidation.getInstance(Directory.this, algorithm, KEY, dropPath.getFileName().toString(), detectedFile);
+                        UserValidation.getInstance(Registry.this, algorithm, KEY, dropPath.getFileName().toString(), detectedFile);
                     }
                 }
             }));
@@ -199,7 +199,7 @@ public final class Directory implements Serializable {
     }
 
 
-    private PbxFolder goToFolder(String path, Source at) {
+    private PairFolder goToFolder(String path, Source at) {
 
         String relative = getRelativePath(path, at);
         if(relative.equals("")){
@@ -207,7 +207,7 @@ public final class Directory implements Serializable {
         }
 
         String[] pathParts = relative.split("/");
-        PbxFolder atFolder = root;
+        PairFolder atFolder = root;
         for(String next : pathParts){
             atFolder = atFolder.goToFolder(next);
         }
@@ -219,7 +219,7 @@ public final class Directory implements Serializable {
         String toRemoveFromPath = "";
         if(at.equals(Source.SHARED))
             toRemoveFromPath = SHARED_PATH + File.separator;
-        else if(at.equals(Source.OUTPUT))
+        else if(at.equals(Source.PROT))
             toRemoveFromPath = OUTPUT_PATH + File.separator;
 
         toRemoveFromPath = toRemoveFromPath.replace("\\", "/");
@@ -243,7 +243,7 @@ public final class Directory implements Serializable {
         currentlyIndexing = false;
     }
 
-    private void indexingRecursive(PbxFolder checkingEntry, File sharedFolder, File outputFolder) throws ProtException {
+    private void indexingRecursive(PairFolder checkingEntry, File sharedFolder, File outputFolder) throws ProtException {
         if(checkingEntry==null)
             return;
         // generate structures to perform a careful ONE-BY-ONE file and folder checking
@@ -272,18 +272,18 @@ public final class Directory implements Serializable {
 
 
         // files and dirs with entries (= already existed in the directory before checking)
-        List<PbxFile> entryFiles = new ArrayList<>();
+        List<PairFile> entryFiles = new ArrayList<>();
         entryFiles.addAll(checkingEntry.files);
-        for(PbxFile f : entryFiles){
+        for(PairFile f : entryFiles){
             File sharedFile = dropMap.get(f.encodedName());
             File outputFile = protMap.get(f.realName());
             evaluate(f, sharedFile, outputFile);
             filesAtShared.remove(sharedFile);
             filesAtOutput.remove(outputFile);
         }
-        List<PbxFolder> entryFolders = new ArrayList<>();
+        List<PairFolder> entryFolders = new ArrayList<>();
         entryFolders.addAll(checkingEntry.folders);
-        for (PbxFolder f : entryFolders){
+        for (PairFolder f : entryFolders){
             File sharedFile = dropMap.get(f.encodedName());
             File outputFile = protMap.get(f.realName());
             indexingRecursive(f, sharedFile, outputFile);
@@ -299,10 +299,10 @@ public final class Directory implements Serializable {
             try {
                 String realName = convertEncodedNameToRealName(sharedFile.getName());
                 File outputFile = protMap.get(realName);
-                PbxEntry thisEntry = evaluate(null, sharedFile, outputFile);
+                Pair thisEntry = evaluate(null, sharedFile, outputFile);
                 if(sharedFile.isDirectory()){
                     // iterate this folder with the entry that was just created
-                    indexingRecursive((PbxFolder)thisEntry, sharedFile, outputFile);
+                    indexingRecursive((PairFolder)thisEntry, sharedFile, outputFile);
                 }
 
             } catch(GeneralSecurityException ex) {
@@ -316,10 +316,10 @@ public final class Directory implements Serializable {
             try {
                 String encodedName = convertRealNameToEncodedName(outputFile.getName());
                 File sharedFile = protMap.get(encodedName);
-                PbxEntry thisEntry = evaluate(null, sharedFile, outputFile);
+                Pair thisEntry = evaluate(null, sharedFile, outputFile);
                 if(outputFile.isDirectory()){
                     // iterate this folder with the entry that was just created
-                    indexingRecursive((PbxFolder)thisEntry, sharedFile, outputFile);
+                    indexingRecursive((PairFolder)thisEntry, sharedFile, outputFile);
                 }
 
             } catch(GeneralSecurityException ex) {
@@ -330,19 +330,19 @@ public final class Directory implements Serializable {
         }
     }
 
-    private PbxEntry evaluate(PbxEntry entry, File sharedFile, File outputFile) throws ProtException {
+    private Pair evaluate(Pair entry, File sharedFile, File outputFile) throws ProtException {
         try{
             if(entry==null){
                 if(sharedFile==null && outputFile!=null){ // new file at output folder -> add to directory and sync to shared
-                    return add(outputFile, Source.OUTPUT);
+                    return add(outputFile, Source.PROT);
                 } else if(sharedFile!=null && outputFile==null){ // new file at shared folder -> add to directory and sync to output
                     return add(sharedFile, Source.SHARED);
                 } else if(sharedFile!=null && outputFile!=null){// new files at both folders -> add both to directory as conflict copies and sync to each side
-                    addConflicted(outputFile, Source.OUTPUT);
+                    addConflicted(outputFile, Source.PROT);
                     return add(sharedFile, Source.SHARED);
                 }
-            } else if(entry instanceof PbxFile) { // is a file that already existed at directory
-                PbxFile entry0 = (PbxFile) entry;
+            } else if(entry instanceof PairFile) { // is a file that already existed at directory
+                PairFile entry0 = (PairFile) entry;
                 if ((sharedFile == null || !sharedFile.exists()) && (outputFile == null || !outputFile.exists()) && !entry.hidden) { // entry was deleted from both folders -> delete it from directory
                     permanentDelete(entry);
                 } else if ((sharedFile == null || !sharedFile.exists()) && outputFile != null) { // file was deleted from shared folder
@@ -379,12 +379,12 @@ public final class Directory implements Serializable {
                             Sync.toShared(this, entry);
 
                         } else if (compareOutputEntry != 0 && compareSharedEntry != 0) { // both files were updated -> conflict
-                            addConflicted(outputFile, Source.OUTPUT);
+                            addConflicted(outputFile, Source.PROT);
                             Sync.toOutput(this, entry);
                         }
                     }
                 }
-            } else if(entry instanceof PbxFolder) {
+            } else if(entry instanceof PairFolder) {
                 if ((sharedFile == null || !sharedFile.exists()) && (outputFile == null || !outputFile.exists()) && !entry.hidden) { // entry was deleted from both folders -> delete it from directory
                     permanentDelete(entry);
                 } else if ((sharedFile == null || !sharedFile.exists()) && outputFile != null) { // entry was deleted from shared folder
@@ -405,9 +405,9 @@ public final class Directory implements Serializable {
     // !!!!!!!!!!!!!!!!!!!!!!!!!! ADD ACTIONS !!!!!!!!!!!!!!!!!!!!!!!!!!
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    public PbxEntry add(File file, Source fileFrom) throws ProtException {
+    public Pair add(File file, Source fileFrom) throws ProtException {
         logger.info("Adding "+file.getAbsolutePath());
-        if(fileFrom.equals(Source.OUTPUT)){
+        if(fileFrom.equals(Source.PROT)){
             return addFromOutput(file, false);
         }
         else if(fileFrom.equals(Source.SHARED)){
@@ -415,9 +415,9 @@ public final class Directory implements Serializable {
         }
         return null;
     }
-    public PbxEntry addConflicted(File file, Source fileFrom) throws ProtException {
+    public Pair addConflicted(File file, Source fileFrom) throws ProtException {
         logger.info("Adding "+file.getAbsolutePath());
-        if(fileFrom.equals(Source.OUTPUT)){
+        if(fileFrom.equals(Source.PROT)){
             return addFromOutput(file, true);
         }
         else if(fileFrom.equals(Source.SHARED)){
@@ -425,19 +425,19 @@ public final class Directory implements Serializable {
         }
         return null;
     }
-    private PbxEntry addFromOutput(File file, boolean conflicted) throws ProtException {
-        PbxEntry newEntry = addOnlyToDirectoryFromOutput(file, conflicted);
+    private Pair addFromOutput(File file, boolean conflicted) throws ProtException {
+        Pair newEntry = addOnlyToDirectoryFromOutput(file, conflicted);
         if(newEntry!=null)
             Sync.toShared(this, newEntry);
         return newEntry;
     }
-    private PbxEntry addFromShared(File file, boolean conflicted) throws ProtException {
-        PbxEntry newEntry = addOnlyToDirectoryFromShared(file, conflicted);
+    private Pair addFromShared(File file, boolean conflicted) throws ProtException {
+        Pair newEntry = addOnlyToDirectoryFromShared(file, conflicted);
         if(newEntry!=null)
             Sync.toOutput(this, newEntry);
         return newEntry;
     }
-    private PbxEntry addOnlyToDirectoryFromOutput(File file, boolean conflicted) throws ProtException {
+    private Pair addOnlyToDirectoryFromOutput(File file, boolean conflicted) throws ProtException {
         try{
             String realName = file.getName();
             if(conflicted && !file.isDirectory()){
@@ -457,19 +457,19 @@ public final class Directory implements Serializable {
 
 
             String parentPath = file.getParentFile().getAbsolutePath();
-            PbxFolder parent = null;
+            PairFolder parent = null;
             if(!parentPath.equalsIgnoreCase(OUTPUT_PATH))
-                parent = goToFolder(parentPath, Source.OUTPUT);
+                parent = goToFolder(parentPath, Source.PROT);
 
             if(parent==null)
                 parent = root;
 
-            return addFinalize(file, parent, realName, encodedName, Source.OUTPUT);
+            return addFinalize(file, parent, realName, encodedName, Source.PROT);
         }catch (IOException|GeneralSecurityException ex) {
             throw new ProtException(ex);
         }
     }
-    private PbxEntry addOnlyToDirectoryFromShared(File file, boolean conflicted) throws ProtException {
+    private Pair addOnlyToDirectoryFromShared(File file, boolean conflicted) throws ProtException {
         try{
             String encodedName = file.getName();
             String realName = convertEncodedNameToRealName(encodedName);
@@ -489,7 +489,7 @@ public final class Directory implements Serializable {
             }
 
             String parentPath = file.getParentFile().getAbsolutePath();
-            PbxFolder parent = null;
+            PairFolder parent = null;
             if(!parentPath.equalsIgnoreCase(SHARED_PATH))
                 parent = goToFolder(parentPath, Source.SHARED);
 
@@ -501,12 +501,12 @@ public final class Directory implements Serializable {
             throw new ProtException(ex);
         }
     }
-    private PbxEntry addFinalize(File file, PbxFolder parent, String realName, String encodedName, Source fromFolder) throws ProtException, IOException, GeneralSecurityException {
-        PbxEntry newPbxEntry;
+    private Pair addFinalize(File file, PairFolder parent, String realName, String encodedName, Source fromFolder) throws ProtException, IOException, GeneralSecurityException {
+        Pair newPbxEntry;
 
         if(file.isDirectory()) { // create a new PbxFolder
             // checks if entry already existed at parent
-            for(PbxFolder entry : parent.folders){
+            for(PairFolder entry : parent.folders){
                 if(entry.realName().equals(realName) || entry.encodedName().equals(encodedName)){ // entry already exists!!!
                     if(entry.isHidden()){ // if it's hidden, restore it
                         this.showEntry(entry);
@@ -519,15 +519,15 @@ public final class Directory implements Serializable {
             }
 
             // does not exist, so create it
-            newPbxEntry = new PbxFolder(parent, encodedName, realName);
-            parent.addFolder((PbxFolder) newPbxEntry);
+            newPbxEntry = new PairFolder(parent, encodedName, realName);
+            parent.addFolder((PairFolder) newPbxEntry);
 
             if(fromFolder.equals(Source.SHARED)){
                 new File(file, "»==").createNewFile();
             }
         } else { // create a new PbxFile
             // checks if entry already existed at parent
-            for(PbxFile entry : parent.files){
+            for(PairFile entry : parent.files){
                 if(entry.realName().equals(realName) || entry.encodedName().equals(encodedName)){ // entry already exists!!!
                     entry.lastModified = new Date(file.lastModified());
                     if(entry.isHidden()){ // if it's hidden, update the byte data and restore it
@@ -535,7 +535,7 @@ public final class Directory implements Serializable {
                         if(fromFolder.equals(Source.SHARED)) {
                             entry.data = decrypt(newData);
                         }
-                        else if (fromFolder.equals(Source.OUTPUT)) {
+                        else if (fromFolder.equals(Source.PROT)) {
                             entry.data = newData;
                         }
                         this.showEntry(entry);
@@ -546,8 +546,8 @@ public final class Directory implements Serializable {
 
 
             // entry is completely new -> add it normally to its parent
-            newPbxEntry = new PbxFile(parent, encodedName, realName, new Date(file.lastModified()), file.length());
-            parent.addFile((PbxFile) newPbxEntry);
+            newPbxEntry = new PairFile(parent, encodedName, realName, new Date(file.lastModified()), file.length());
+            parent.addFile((PairFile) newPbxEntry);
         }
         return newPbxEntry;
     }
@@ -594,7 +594,7 @@ public final class Directory implements Serializable {
     // !!!!!!!!!!!!!!!!!!!!!!!! DELETE ACTIONS !!!!!!!!!!!!!!!!!!!!!!!!!
     // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    public void permanentDelete(PbxEntry entry){
+    public void permanentDelete(Pair entry){
         entry.parentFolder().removeEntry(entry);
         emptyData(entry);
     }
@@ -602,8 +602,8 @@ public final class Directory implements Serializable {
     public void delete(Path filePath, Source fromFolder) throws ProtException {
         if(Constants.verbose) logger.info("Deleting file "+filePath);
 
-        PbxFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
-        PbxEntry toDelete;
+        PairFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
+        Pair toDelete;
         toDelete = parent.goToFile(filePath.getFileName().toString());
         if(toDelete==null){
             toDelete = parent.goToFolder(filePath.getFileName().toString());
@@ -612,27 +612,27 @@ public final class Directory implements Serializable {
     }
 
     /**
-     * Hides the file or folder, keeping it in the directory but deleting it from both OUTPUT and SHARED folders
+     * Hides the file or folder, keeping it in the directory but deleting it from both PROT and SHARED folders
      * @throws ProtException if the file was not successfully read
      */
-    private void hideEntry(PbxEntry entry) throws ProtException {
+    private void hideEntry(Pair entry) throws ProtException {
         if(entry.isHidden()){
             return;
         }
 
-        if(entry instanceof PbxFolder){
-            for(PbxFolder f : ((PbxFolder)entry).folders)
+        if(entry instanceof PairFolder){
+            for(PairFolder f : ((PairFolder)entry).folders)
                 hideEntry(f);
 
-            for(PbxFile f : ((PbxFolder)entry).files)
+            for(PairFile f : ((PairFolder)entry).files)
                 hideEntry(f);
         }
 
         try{
             File fileAtOutput = new File(OUTPUT_PATH + File.separator + entry.relativeRealPath());
             if(fileAtOutput.exists()){
-                if(entry instanceof PbxFile){
-                    ((PbxFile)entry).data = FileUtils.readFileToByteArray(fileAtOutput);
+                if(entry instanceof PairFile){
+                    ((PairFile)entry).data = FileUtils.readFileToByteArray(fileAtOutput);
                 }
                 SKIP_WATCHER_ENTRIES.add(fileAtOutput.getAbsolutePath());
                 SKIP_WATCHER_ENTRIES.add(fileAtOutput.getParentFile().getAbsolutePath());
@@ -641,8 +641,8 @@ public final class Directory implements Serializable {
 
             File fileAtShared = new File(SHARED_PATH + File.separator + entry.relativeEncodedPath());
             if(fileAtShared.exists()){
-                if(entry instanceof PbxFile){
-                    ((PbxFile)entry).data = decrypt(FileUtils.readFileToByteArray(fileAtShared));
+                if(entry instanceof PairFile){
+                    ((PairFile)entry).data = decrypt(FileUtils.readFileToByteArray(fileAtShared));
                 }
                 SKIP_WATCHER_ENTRIES.add(fileAtShared.getAbsolutePath());
                 SKIP_WATCHER_ENTRIES.add(fileAtShared.getParentFile().getAbsolutePath());
@@ -657,10 +657,10 @@ public final class Directory implements Serializable {
     }
 
     /**
-     * Shows the file or folder, reversing the delete project on both OUTPUT and SHARED folders
+     * Shows the file or folder, reversing the delete project on both PROT and SHARED folders
      * @throws IOException if the file was not successfully read
      */
-    public void showEntry(PbxEntry entry) throws IOException {
+    public void showEntry(Pair entry) throws IOException {
         if(!entry.isHidden()){
             return;
         }
@@ -673,8 +673,8 @@ public final class Directory implements Serializable {
         File fileAtOutput = new File(OUTPUT_PATH + File.separator + entry.relativeRealPath());
         SKIP_WATCHER_ENTRIES.add(fileAtOutput.getAbsolutePath());
 
-        if(entry instanceof PbxFile){
-            PbxFile pbxFile = (PbxFile)entry;
+        if(entry instanceof PairFile){
+            PairFile pbxFile = (PairFile)entry;
             pbxFile.lastModified = new Date(fileAtOutput.lastModified());
             FileUtils.writeByteArrayToFile(fileAtOutput, pbxFile.data);
             TrayApplet.getInstance().baloon("File Restored",
@@ -682,7 +682,7 @@ public final class Directory implements Serializable {
                     TrayIcon.MessageType.INFO);
             emptyData(entry);
 
-        } else if(entry instanceof PbxFolder){
+        } else if(entry instanceof PairFolder){
             fileAtOutput.mkdir();
             TrayApplet.getInstance().baloon("Folder Restored",
                     "The deleted folder \"" + entry.realName() + "\" was restored to its original location.",
@@ -697,10 +697,10 @@ public final class Directory implements Serializable {
         build(treeRoot, root);
         return treeRoot;
     }
-    private boolean build(DefaultMutableTreeNode treeRoot, PbxFolder root) {
+    private boolean build(DefaultMutableTreeNode treeRoot, PairFolder root) {
         boolean deletedFileWasAdded = false;
 
-        for(PbxFolder f : root.folders) {
+        for(PairFolder f : root.folders) {
             DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f, true);
             newNode.setAllowsChildren(true);
             deletedFileWasAdded = build(newNode, f);
@@ -708,7 +708,7 @@ public final class Directory implements Serializable {
                 treeRoot.add(newNode);
         }
 
-        for(PbxFile f : root.files) {
+        for(PairFile f : root.files) {
             DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f, true);
             newNode.setAllowsChildren(false);
             if(f.hidden){
@@ -720,10 +720,10 @@ public final class Directory implements Serializable {
         return deletedFileWasAdded;
     }
 
-    private static void emptyData(PbxEntry entry){
+    private static void emptyData(Pair entry){
         // suggest Java Garbage Collector to stop storing this entry's data
-        if(entry instanceof PbxFile){
-            PbxFile pbxFile = (PbxFile)entry;
+        if(entry instanceof PairFile){
+            PairFile pbxFile = (PairFile)entry;
             if(pbxFile.data!=null){
                 Arrays.fill(pbxFile.data, (byte)0);
                 pbxFile.data = null;
@@ -763,7 +763,7 @@ public final class Directory implements Serializable {
 //            }
 //            Sync.toOutput(this, entry);
 //
-//        } else if (fromFolder.equals(Source.OUTPUT)) {
+//        } else if (fromFolder.equals(Source.PROT)) {
 //            if(entry instanceof PbxFile) {
 //                File modifiedFile = new File(OUTPUT_PATH + File.separator + entry.relativeRealPath());
 //                ((PbxFile)entry).fileSize = modifiedFile.length();
@@ -862,7 +862,7 @@ public final class Directory implements Serializable {
 
             // 1) remove entries from the syncing threads
             protboxWatcher.interrupt();
-            DuoReference<List<PbxEntry>> removedEntries = Sync.removeEntriesOfDirectory(this);
+            DuoRef<List<Pair>> removedEntries = Sync.removeEntriesOfDirectory(this);
 
 
             // 2) set new path
@@ -877,15 +877,15 @@ public final class Directory implements Serializable {
 
 
             // 4) start new Watcher on the new Folder
-            protboxWatcher = new Thread(new DirectoryWatcher(this, Source.OUTPUT, newOutputFile.toPath()));
+            protboxWatcher = new Thread(new DirectoryWatcher(this, Source.PROT, newOutputFile.toPath()));
             protboxWatcher.start();
 
 
             // 5) add removed entries to the syncing threads again
-            for(PbxEntry e : removedEntries.getFirst())
+            for(Pair e : removedEntries.getFirst())
                 Sync.toOutput(this, e);
 
-            for(PbxEntry e : removedEntries.getSecond())
+            for(Pair e : removedEntries.getSecond())
                 Sync.toShared(this, e);
 
 
@@ -898,7 +898,7 @@ public final class Directory implements Serializable {
         String path = "";
         if(folderToOpen.equals(Source.SHARED))
             path = SHARED_PATH;
-        else if(folderToOpen.equals(Source.OUTPUT))
+        else if(folderToOpen.equals(Source.PROT))
             path = OUTPUT_PATH;
 
         if(Constants.OS.equals("windows"))
@@ -922,10 +922,10 @@ public final class Directory implements Serializable {
             return false;
         } else if(this!=o) {
             return false;
-        } else if(!(o instanceof Directory))
+        } else if(!(o instanceof Registry))
             return false;
 
-        Directory d = (Directory) o;
+        Registry d = (Registry) o;
         return SHARED_PATH.equalsIgnoreCase(d.SHARED_PATH) && OUTPUT_PATH.equalsIgnoreCase(d.OUTPUT_PATH);
     }
 
@@ -938,15 +938,15 @@ public final class Directory implements Serializable {
         sb.append(new File(SHARED_PATH).getName()+"\n");
         return "\n"+print(sb, root, indent, indent).toString();
     }
-    private StringBuffer print(StringBuffer sb, PbxFolder root, String originalIndent, String indent){
-        for(PbxFile f : root.files){
+    private StringBuffer print(StringBuffer sb, PairFolder root, String originalIndent, String indent){
+        for(PairFile f : root.files){
             sb.append(indent+f.realName()+" (file");
             if(f.isHidden())
                 sb.append(", hidden)\n");
             else
                 sb.append(")\n");
         }
-        for(PbxFolder f : root.folders){
+        for(PairFolder f : root.folders){
             if(f.parentFolder()!=null)
                 sb.append(indent+f.realName()+" (folder, parent:"+f.parentFolder().realName()+")\n");
             else

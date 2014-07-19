@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.util.referencewrappers;
+package pt.ua.sio.protbox.util;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>))
  * @version 1.0
  */
-public class PairReference<A, B> implements Serializable {
+public class DoubleRef<A, B> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -18,7 +18,7 @@ public class PairReference<A, B> implements Serializable {
     /**
      * Builds a storage class for two empty values
      */
-    public PairReference() {
+    public DoubleRef() {
         this.first = null;
         this.second = null;
     }
@@ -28,7 +28,7 @@ public class PairReference<A, B> implements Serializable {
      * @param first the first value to be stored
      * @param second the second value to be stored
      */
-    public PairReference(A first, B second) {
+    public DoubleRef(A first, B second) {
         this.first = new AtomicReference<>(first);
         this.second = new AtomicReference<>(second);
     }

@@ -5,7 +5,7 @@ import java.util.Date;
 
 /**
  * PbxFile is a entry that structures a file in the Directory. Other than having the same
- * variables as {@link PbxEntry}, this is also represented by an array of bytes that contains
+ * variables as {@link Pair}, this is also represented by an array of bytes that contains
  * the data of the file. This array is only filled when the correspondent file in the native
  * folders are deleted.
  *
@@ -13,13 +13,13 @@ import java.util.Date;
  *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
  * @version 1.0
  */
-public final class PbxFile extends PbxEntry implements Serializable {
+public final class PairFile extends Pair implements Serializable {
     private static final long serialVersionUID = 1L;
     byte[] data;
     Date lastModified;
     long fileSize;
 
-    PbxFile(final PbxFolder parentFolder, final String encodedName, final String realName, final Date lastModified, long fileSize) {
+    PairFile(final PairFolder parentFolder, final String encodedName, final String realName, final Date lastModified, long fileSize) {
         super(parentFolder, encodedName, realName);
         this.lastModified = lastModified;
         this.fileSize = fileSize;

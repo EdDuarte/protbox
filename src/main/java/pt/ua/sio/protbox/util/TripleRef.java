@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.util.referencewrappers;
+package pt.ua.sio.protbox.util;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -7,18 +7,18 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>))
  * @version 1.0
  */
-public class TripleReference<A, B, C> implements Serializable {
+public class TripleRef<A, B, C> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private final PairReference<A, B> pair;
+    private final DoubleRef<A, B> pair;
     private final AtomicReference<C> third;
 
     /**
      * Builds a storage class for two empty values
      */
-    public TripleReference() {
-        this.pair = new PairReference<>();
+    public TripleRef() {
+        this.pair = new DoubleRef<>();
         this.third = null;
     }
 
@@ -27,8 +27,8 @@ public class TripleReference<A, B, C> implements Serializable {
      * @param first the first value to be stored
      * @param second the second value to be stored
      */
-    public TripleReference(A first, B second, C third) {
-        this.pair = new PairReference<>(first, second);
+    public TripleRef(A first, B second, C third) {
+        this.pair = new DoubleRef<>(first, second);
         this.third = new AtomicReference<>(third);
     }
 

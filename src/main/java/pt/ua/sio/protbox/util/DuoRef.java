@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.util.referencewrappers;
+package pt.ua.sio.protbox.util;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicReference;
@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>))
  * @version 1.0
  */
-public class DuoReference<T> implements Serializable {
+public class DuoRef<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -18,7 +18,7 @@ public class DuoReference<T> implements Serializable {
     /**
      * Builds a storage class for two empty values
      */
-    public DuoReference() {
+    public DuoRef() {
         this.first = null;
         this.second = null;
     }
@@ -28,7 +28,7 @@ public class DuoReference<T> implements Serializable {
      * @param first the first value to be stored
      * @param second the second value to be stored
      */
-    public DuoReference(T first, T second) {
+    public DuoRef(T first, T second) {
         this.first = new AtomicReference<>(first);
         this.second = new AtomicReference<>(second);
     }

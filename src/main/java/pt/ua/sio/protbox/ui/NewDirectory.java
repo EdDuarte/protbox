@@ -1,4 +1,4 @@
-package pt.ua.sio.protbox.gui;
+package pt.ua.sio.protbox.ui;
 
 import ij.io.DirectoryChooser;
 import org.jdesktop.swingx.JXLabel;
