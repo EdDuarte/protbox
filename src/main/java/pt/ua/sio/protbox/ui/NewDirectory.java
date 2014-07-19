@@ -6,12 +6,12 @@ import org.jdesktop.swingx.prompt.PromptSupport;
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.core.User;
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 import pt.ua.sio.protbox.core.watcher.SpecificWatcher;
 import pt.ua.sio.protbox.exception.ProtException;
 import pt.ua.sio.protbox.util.AWTUtils;
-import pt.ua.sio.protbox.util.referencewrappers.PairReference;
-import pt.ua.sio.protbox.util.referencewrappers.TripleReference;
+import pt.ua.sio.protbox.util.DoubleRef;
+import pt.ua.sio.protbox.util.TripleRef;
 import pt.ua.sio.protbox.util.Uno;
 
 import javax.crypto.Cipher;
@@ -411,7 +411,7 @@ public class NewDirectory extends JFrame {
                 byte[] signatureBytes = Main.initializedData.signatureBytes;
 
                 // SAVE THE SIGNED PUBLIC KEY, THE SIGNATURE AND THE USER DATA IN THE "»ASK" FILE
-                out.writeObject(new TripleReference<>(thisUser, encodedPublicKey, signatureBytes));
+                out.writeObject(new TripleRef<>(thisUser, encodedPublicKey, signatureBytes));
                 out.flush();
                 waitForResponse(dropPath, askFile, Main.initializedData.privateKey);
 
@@ -463,7 +463,7 @@ public class NewDirectory extends JFrame {
 
                                 // LOAD RECEIVED FILE WITH ALGORITHM AND ENCRYPTED KEY
                                 try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(detectedFile))){
-                                    PairReference<String,  byte[]> keyFile = (PairReference)in.readObject();
+                                    DoubleRef<String,  byte[]> keyFile = (DoubleRef)in.readObject();
                                     in.close();
                                     Constants.delete(detectedFile);
 
@@ -548,7 +548,7 @@ public class NewDirectory extends JFrame {
 
     private void addInstance(SecretKey key, String algorithm, boolean isANewDirectory){
         try{
-            Directory directory = new Directory(Main.initializedData.user, path1.getText(), path2.getText(), algorithm, key, isANewDirectory);
+            Registry directory = new Registry(Main.initializedData.user, path1.getText(), path2.getText(), algorithm, key, isANewDirectory);
             directory.initialize();
             JLabel l = new InstanceCell(directory);
             l.setMinimumSize(new Dimension(0, 50));

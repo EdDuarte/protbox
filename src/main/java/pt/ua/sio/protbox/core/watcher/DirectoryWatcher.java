@@ -2,7 +2,7 @@ package pt.ua.sio.protbox.core.watcher;
 
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 import pt.ua.sio.protbox.core.directory.Source;
 import pt.ua.sio.protbox.exception.ProtException;
 
@@ -18,13 +18,13 @@ import java.util.*;
  */
 public final class DirectoryWatcher implements Runnable {
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(DirectoryWatcher.class);
-    private Directory directory;
+    private Registry directory;
     private Source fromFolder;
     private Path root;
     private WatchService watchService = FileSystems.getDefault().newWatchService();
 
 
-    public DirectoryWatcher(Directory directory, Source fromFolder, Path root) throws IOException {
+    public DirectoryWatcher(Registry directory, Source fromFolder, Path root) throws IOException {
         this.directory = directory;
         this.fromFolder = fromFolder;
         this.root = root;

@@ -2,7 +2,7 @@ package pt.ua.sio.protbox.ui;
 
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.core.User;
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 import pt.ua.sio.protbox.core.directory.Source;
 
 import javax.swing.*;
@@ -23,9 +23,9 @@ import java.nio.file.Paths;
 public class InstanceCell extends JLabel {
 
     private final JLabel revertButton, userButton, configButton;
-    private final Directory directory;
+    private final Registry directory;
 
-    InstanceCell(final Directory directory){
+    InstanceCell(final Registry directory){
         this.directory = directory;
         setLayout(null);
         setBorder(new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
@@ -84,7 +84,7 @@ public class InstanceCell extends JLabel {
         menu.add(openDrop);
 
         JMenuItem openProt = new JMenuItem("Open output folder...");
-        openProt.addActionListener(new OpenFolderListener(Source.OUTPUT));
+        openProt.addActionListener(new OpenFolderListener(Source.PROT));
         menu.add(openProt);
 
 //        menu.addSeparator();
@@ -123,7 +123,7 @@ public class InstanceCell extends JLabel {
 
 
         addMouseListener(new CellMouseListener());
-        addMouseListener(new OpenFolderListener(Source.OUTPUT));
+        addMouseListener(new OpenFolderListener(Source.PROT));
     }
 
     private class CellMouseListener extends MouseAdapter {
@@ -155,7 +155,7 @@ public class InstanceCell extends JLabel {
         configButton.setVisible(false);
     }
 
-    Directory getDirectory(){
+    Registry getDirectory(){
         return directory;
     }
 

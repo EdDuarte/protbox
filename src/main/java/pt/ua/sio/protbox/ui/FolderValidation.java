@@ -1,6 +1,6 @@
 package pt.ua.sio.protbox.ui;
 
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 
 import javax.swing.*;
 import java.awt.*;
@@ -37,7 +37,7 @@ public class FolderValidation {
 
         for(Component c : TrayApplet.getInstance().instanceList.getComponents()){
             if(c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")){
-                Directory toCheck = ((InstanceCell)c).getDirectory();
+                Registry toCheck = ((InstanceCell)c).getDirectory();
                 Path existingDrop = Paths.get(toCheck.SHARED_PATH);
                 Path existingProt = Paths.get(toCheck.OUTPUT_PATH);
 

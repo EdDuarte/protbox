@@ -6,7 +6,7 @@ import org.jdesktop.xswingx.PromptSupport;
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.core.User;
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 import pt.ua.sio.protbox.exception.ProtException;
 import pt.ua.sio.protbox.util.AWTUtils;
 
@@ -31,23 +31,23 @@ public class Config extends JDialog {
 
     //    private final TrayApplet mainApp;
 //    private final JPanel instanceList;
-    private Directory directory;
+    private Registry directory;
 //    private final Map<String, BufferedImage> ASSETS;
 
     private JTextField path;
     //    private JComboBox<String> combo;
     private JLabel ok, cancel;
 
-    private static Map<Directory, Config> instances = new HashMap<>();
+    private static Map<Registry, Config> instances = new HashMap<>();
 
     static void closeAllInstances(){
-        for(Directory d : instances.keySet()){
+        for(Registry d : instances.keySet()){
             instances.get(d).dispose();
         }
         instances.clear();
     }
 
-    public static Config getInstance(final Directory directory, final InstanceCell instanceCell) {
+    public static Config getInstance(final Registry directory, final InstanceCell instanceCell) {
         Config newInstance = instances.get(directory);
         if(newInstance==null){
             newInstance = new Config(directory, instanceCell);
@@ -58,7 +58,7 @@ public class Config extends JDialog {
         return newInstance;
     }
 
-    private Config(final Directory directory, final InstanceCell instanceCell) {
+    private Config(final Registry directory, final InstanceCell instanceCell) {
         super();
         this.setLayout(null);
 //        this.mainApp = mainApp;

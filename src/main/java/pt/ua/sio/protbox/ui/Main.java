@@ -6,9 +6,9 @@ import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.core.User;
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 import pt.ua.sio.protbox.exception.ProtException;
-import pt.ua.sio.protbox.util.referencewrappers.PairReference;
+import pt.ua.sio.protbox.util.DoubleRef;
 import sun.security.pkcs11.SunPKCS11;
 
 import javax.crypto.Cipher;
@@ -179,7 +179,7 @@ public class Main {
                         if(serializedDirectoriesPasswordKey !=null){
 
                             // if there are serialized files, load them if they can be decoded by this user's private key
-                            final List<PairReference<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
+                            final List<DoubleRef<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
                             File installDir = new File(Constants.INSTALL_DIR);
                             if(Constants.verbose) logger.info("Reading serialized directory files...");
 
@@ -192,7 +192,7 @@ public class Main {
                                             Cipher cipher = Cipher.getInstance("DESede");
                                             cipher.init(Cipher.DECRYPT_MODE, serializedDirectoriesPasswordKey);
                                             byte[] realData = cipher.doFinal(data);
-                                            serializedDirectoryFiles.add(new PairReference<>(f, realData));
+                                            serializedDirectoryFiles.add(new DoubleRef<>(f, realData));
                                         }catch (GeneralSecurityException ex) {
                                             logger.info("Inserted Password does not correspond to " + f.getName());
                                         }
@@ -258,13 +258,13 @@ public class Main {
         }).start();
     }
 
-    private static void load(List<PairReference<File, byte[]>> dataList) throws ProtException {
+    private static void load(List<DoubleRef<File, byte[]>> dataList) throws ProtException {
         try{
-            for(PairReference<File, byte[]> pair : dataList) {
+            for(DoubleRef<File, byte[]> pair : dataList) {
                 File serialized = pair.getFirst();
                 if(Constants.verbose) logger.info("Reading {}...", serialized);
                 ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(pair.pollSecond()));
-                Directory directory = (Directory) stream.readObject();
+                Registry directory = (Registry) stream.readObject();
 
                 if(!directory.accessUser.equals(initializedData.user)){
                     // this directory does not belong to this user, so skip it!
@@ -344,7 +344,7 @@ public class Main {
     private static void save(final Cipher cipher) throws IOException {
         for(Component c : trayApplet.instanceList.getComponents()){
             if(c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")){
-                Directory toSerialize = ((InstanceCell)c).getDirectory();
+                Registry toSerialize = ((InstanceCell)c).getDirectory();
 
 
                 // update the »users file to show this user as unavailable
@@ -396,7 +396,7 @@ public class Main {
 
     }
 
-    private static void changeOutputPath(Directory directory, File serializedDirectory) throws ProtException {
+    private static void changeOutputPath(Registry directory, File serializedDirectory) throws ProtException {
         if (JOptionPane.showConfirmDialog(
                 null, "The output folder from one of your directories\n" +
                 "was deleted while Protbox wasn't running!\n" +

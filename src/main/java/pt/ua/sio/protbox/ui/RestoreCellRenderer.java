@@ -1,9 +1,9 @@
 package pt.ua.sio.protbox.ui;
 
 import pt.ua.sio.protbox.core.Constants;
-import pt.ua.sio.protbox.core.directory.PbxEntry;
-import pt.ua.sio.protbox.core.directory.PbxFile;
-import pt.ua.sio.protbox.core.directory.PbxFolder;
+import pt.ua.sio.protbox.core.directory.Pair;
+import pt.ua.sio.protbox.core.directory.PairFile;
+import pt.ua.sio.protbox.core.directory.PairFolder;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
@@ -42,18 +42,18 @@ public class RestoreCellRenderer extends DefaultTreeCellRenderer {
         tree.setRowHeight(32);
 
         // rendering font and ASSETS
-        PbxEntry entry = (PbxEntry)((DefaultMutableTreeNode)value).getUserObject();
+        Pair entry = (Pair)((DefaultMutableTreeNode)value).getUserObject();
         setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
 
-        if(entry instanceof PbxFile){
+        if(entry instanceof PairFile){
             if(entry.isHidden()) {
                 setIcon(new ImageIcon(Constants.ASSETS.get("file.png"))); // image of deleted file
                 setForeground(Color.gray);
             } else{
                 setIcon(new ImageIcon(Constants.ASSETS.get("file.png"))); // image of normal file
             }
-        } else if(entry instanceof PbxFolder){
+        } else if(entry instanceof PairFolder){
             if(entry.isHidden()) {
                 setIcon(new ImageIcon(Constants.ASSETS.get("folder.png"))); // image of deleted file
                 setForeground(Color.gray);

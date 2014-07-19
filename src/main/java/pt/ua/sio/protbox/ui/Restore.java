@@ -4,8 +4,8 @@ import org.jdesktop.swingx.border.DropShadowBorder;
 import org.jdesktop.xswingx.PromptSupport;
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;
-import pt.ua.sio.protbox.core.directory.Directory;
-import pt.ua.sio.protbox.core.directory.PbxEntry;
+import pt.ua.sio.protbox.core.directory.Registry;
+import pt.ua.sio.protbox.core.directory.Pair;
 import pt.ua.sio.protbox.util.AWTUtils;
 
 import javax.swing.*;
@@ -27,7 +27,7 @@ public class Restore extends JDialog {
 
     private static Restore instance;
 
-    public static Restore getInstance(final Directory directory) {
+    public static Restore getInstance(final Registry directory) {
 //        if(instance==null){
 //            instance = new Restore(directory);
 //        } else {
@@ -37,7 +37,7 @@ public class Restore extends JDialog {
         return new Restore(directory);
     }
 
-    private Restore(final Directory directory) {
+    private Restore(final Registry directory) {
         super();
         this.setLayout(null);
 
@@ -121,7 +121,7 @@ public class Restore extends JDialog {
             public void mouseClicked(MouseEvent e) {
                 if (permanent.isEnabled()) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                    PbxEntry entry = (PbxEntry) node.getUserObject();
+                    Pair entry = (Pair) node.getUserObject();
 
                     directory.permanentDelete(entry);
                     dispose();
@@ -143,7 +143,7 @@ public class Restore extends JDialog {
             public void mouseClicked(MouseEvent e) {
                 if (action.isEnabled()) {
                     DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                    PbxEntry entry = (PbxEntry) node.getUserObject();
+                    Pair entry = (Pair) node.getUserObject();
                     try {
                         directory.showEntry(entry);
                         dispose();
@@ -161,7 +161,7 @@ public class Restore extends JDialog {
             public void mouseClicked(MouseEvent e) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                 if (node != null) {
-                    PbxEntry entry = (PbxEntry) node.getUserObject();
+                    Pair entry = (Pair) node.getUserObject();
                     if (entry.isHidden()){
                         permanent.setEnabled(true);
                         action.setEnabled(true);

@@ -4,8 +4,8 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.directory.*;
 import pt.ua.sio.protbox.exception.ProtException;
-import pt.ua.sio.protbox.gui.TrayApplet;
-import pt.ua.sio.protbox.util.referencewrappers.DuoReference;
+import pt.ua.sio.protbox.ui.TrayApplet;
+import pt.ua.sio.protbox.util.DuoRef;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,21 +56,21 @@ public final class Sync {
     }
 
 
-    public static void toOutput(final Directory directory, final PbxEntry newPbxEntry) {
+    public static void toOutput(final Registry directory, final Pair newPbxEntry) {
         // check if toShared has the same corresponding entry (incoming conflict syncing)
         if(!findConflict(directory, newPbxEntry, toShared))
             toOutput.add(new SyncEntry(directory, newPbxEntry));
     }
 
 
-    public static void toShared(final Directory directory, final PbxEntry newPbxEntry) {
+    public static void toShared(final Registry directory, final Pair newPbxEntry) {
         // check if toOutput has the same corresponding entry (incoming conflict syncing)
         if(!findConflict(directory, newPbxEntry, toOutput))
             toShared.add(new SyncEntry(directory, newPbxEntry));
     }
 
 
-    private static boolean findConflict(final Directory directory, final PbxEntry newPbxEntry, Queue<SyncEntry> queueToCheck){
+    private static boolean findConflict(final Registry directory, final Pair newPbxEntry, Queue<SyncEntry> queueToCheck){
         for(SyncEntry e : queueToCheck){
             if(e.entry.equals(newPbxEntry)){
                 try{
@@ -78,7 +78,7 @@ public final class Sync {
                     queueToCheck.remove(e);
                     File protFile = new File(directory.OUTPUT_PATH + File.separator + newPbxEntry.relativeRealPath());
 
-                    directory.addConflicted(protFile, Source.OUTPUT);
+                    directory.addConflicted(protFile, Source.PROT);
                     Sync.toOutput(directory, newPbxEntry);
 
                     return true;
@@ -92,9 +92,9 @@ public final class Sync {
     }
 
 
-    public static DuoReference<List<PbxEntry>> removeEntriesOfDirectory(final Directory directory) {
-        List<PbxEntry> toOutputRemoved = new ArrayList<>();
-        List<PbxEntry> toSharedRemoved = new ArrayList<>();
+    public static DuoRef<List<Pair>> removeEntriesOfDirectory(final Registry directory) {
+        List<Pair> toOutputRemoved = new ArrayList<>();
+        List<Pair> toSharedRemoved = new ArrayList<>();
 
         for (SyncEntry e : toOutput) {
             if (e.directory.equals(directory)) {
@@ -110,7 +110,7 @@ public final class Sync {
         }
 
         logger.info("Removed entries of directory " + directory.NAME);
-        return new DuoReference<>(toOutputRemoved, toSharedRemoved);
+        return new DuoRef<>(toOutputRemoved, toSharedRemoved);
     }
 
 
@@ -126,16 +126,16 @@ public final class Sync {
                         statusOK = false;
                         TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toOutput.size()+ toShared.size())+" files");
                         SyncEntry polled = toOutput.poll();
-                        Directory directory = polled.directory;
-                        PbxEntry toCreate = polled.entry;
+                        Registry directory = polled.directory;
+                        Pair toCreate = polled.entry;
 
                         File sharedFile = new File(directory.SHARED_PATH + File.separator + toCreate.relativeEncodedPath());
                         File outputFile = new File(directory.OUTPUT_PATH + File.separator + toCreate.relativeRealPath());
 
                         directory.SKIP_WATCHER_ENTRIES.add(outputFile.getAbsolutePath());
-                        if(toCreate instanceof PbxFile)
-                            writeAonB(directory, ((PbxFile)toCreate), Source.SHARED, sharedFile, outputFile);
-                        else if(toCreate instanceof PbxFolder){
+                        if(toCreate instanceof PairFile)
+                            writeAonB(directory, ((PairFile)toCreate), Source.SHARED, sharedFile, outputFile);
+                        else if(toCreate instanceof PairFolder){
                             outputFile.mkdir();
                         }
 
@@ -169,16 +169,16 @@ public final class Sync {
                         statusOK = false;
                         TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toOutput.size()+toShared.size())+" files");
                         SyncEntry polled = toShared.poll();
-                        Directory directory = polled.directory;
-                        PbxEntry toCreate = polled.entry;
+                        Registry directory = polled.directory;
+                        Pair toCreate = polled.entry;
 
                         File outputFile = new File(directory.OUTPUT_PATH + File.separator + toCreate.relativeRealPath());
                         File sharedFile = new File(directory.SHARED_PATH + File.separator + toCreate.relativeEncodedPath());
 
                         directory.SKIP_WATCHER_ENTRIES.add(sharedFile.getAbsolutePath());
-                        if(toCreate instanceof PbxFile)
-                            writeAonB(directory, ((PbxFile)toCreate), Source.OUTPUT, outputFile, sharedFile);
-                        else if(toCreate instanceof PbxFolder){
+                        if(toCreate instanceof PairFile)
+                            writeAonB(directory, ((PairFile)toCreate), Source.PROT, outputFile, sharedFile);
+                        else if(toCreate instanceof PairFolder){
                             sharedFile.mkdir();
                             try{
                                 new File(sharedFile, "»==").createNewFile();
@@ -204,7 +204,7 @@ public final class Sync {
         }
     }
 
-    private static void writeAonB(final Directory directory, final PbxFile entry, final Source folderOfA, final File A, final File B){
+    private static void writeAonB(final Registry directory, final PairFile entry, final Source folderOfA, final File A, final File B){
         new Thread() {
             @Override
             public void run() {
@@ -212,7 +212,7 @@ public final class Sync {
                     byte[] data = FileUtils.readFileToByteArray(A);
                     if(folderOfA.equals(Source.SHARED))
                         data = directory.decrypt(data);
-                    else if(folderOfA.equals(Source.OUTPUT))
+                    else if(folderOfA.equals(Source.PROT))
                         data = directory.encrypt(data);
 
                     FileUtils.writeByteArrayToFile(B, data);

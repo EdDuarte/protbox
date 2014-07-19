@@ -1,17 +1,17 @@
 package pt.ua.sio.protbox.core.synchronization;
 
-import pt.ua.sio.protbox.core.directory.Directory;
-import pt.ua.sio.protbox.core.directory.PbxEntry;
+import pt.ua.sio.protbox.core.directory.Registry;
+import pt.ua.sio.protbox.core.directory.Pair;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>))
  * @version 1.0
  */
 final class SyncEntry {
-    Directory directory;
-    PbxEntry entry;
+    final Registry directory;
+    final Pair entry;
 
-    SyncEntry(Directory directory, PbxEntry entry){
+    SyncEntry(Registry directory, Pair entry){
         this.directory = directory;
         this.entry = entry;
     }

@@ -6,5 +6,5 @@ package pt.ua.sio.protbox.core.directory;
  * @version 1.0
  */
 public enum Source{
-    SHARED, OUTPUT
+    SHARED, PROT
 }

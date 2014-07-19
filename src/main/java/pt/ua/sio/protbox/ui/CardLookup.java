@@ -7,9 +7,9 @@ import pt.gov.cartaodecidadao.*;
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.core.User;
 import pt.ua.sio.protbox.util.*;
-import pt.ua.sio.protbox.util.referencewrappers.DuoReference;
-import pt.ua.sio.protbox.util.referencewrappers.PairReference;
-import pt.ua.sio.protbox.util.referencewrappers.TripleReference;
+import pt.ua.sio.protbox.util.DuoRef;
+import pt.ua.sio.protbox.util.DoubleRef;
+import pt.ua.sio.protbox.util.TripleRef;
 import sun.security.x509.X509CertImpl;
 
 import javax.imageio.ImageIO;
@@ -139,8 +139,8 @@ public class CardLookup extends JFrame {
                     t.cancel();
 
                     setInfoWithLoading();
-                    TripleReference<X509Certificate, PairReference<byte[], PrivateKey>, byte[]> entry = getCertificateAndKeyPair(ks);
-                    PairReference<DuoReference<String>, ImageIcon> userData = readCardInfo();
+                    TripleRef<X509Certificate, DoubleRef<byte[], PrivateKey>, byte[]> entry = getCertificateAndKeyPair(ks);
+                    DoubleRef<DuoRef<String>, ImageIcon> userData = readCardInfo();
                     User loadedUser = new User(
                             userData.getFirst().getFirst(), // CC number
                             userData.getFirst().getSecond(), // name
@@ -167,7 +167,7 @@ public class CardLookup extends JFrame {
         }, 0, 3000);
     }
 
-    private static TripleReference<X509Certificate, PairReference<byte[], PrivateKey>, byte[]> getCertificateAndKeyPair(KeyStore ks){
+    private static TripleRef<X509Certificate, DoubleRef<byte[], PrivateKey>, byte[]> getCertificateAndKeyPair(KeyStore ks){
         try{
             String alias = "CITIZEN SIGNATURE CERTIFICATE";
             ks.load(null, null);
@@ -191,7 +191,7 @@ public class CardLookup extends JFrame {
 
 
                 // RETURN CERTIFICATE, GENERATED PAIR AND SIGNATURE BYTES
-                return new TripleReference<>(c, new PairReference<>(encodedPublicKey, pair.getPrivate()), signatureBytes);
+                return new TripleRef<>(c, new DoubleRef<>(encodedPublicKey, pair.getPrivate()), signatureBytes);
             }
         }catch (Exception ex){
             JOptionPane.showMessageDialog(null, "You must insert you digital signature code in order to use this application!\n" +
@@ -203,7 +203,7 @@ public class CardLookup extends JFrame {
     }
 
 
-    private static PairReference<DuoReference<String>, ImageIcon> readCardInfo() throws PTEID_Exception, IOException {
+    private static DoubleRef<DuoRef<String>, ImageIcon> readCardInfo() throws PTEID_Exception, IOException {
         String id = null, name = null;
         ImageIcon photo = null;
         PTEID_ReaderSet.initSDK();
@@ -236,6 +236,6 @@ public class CardLookup extends JFrame {
         }
 
         PTEID_ReaderSet.releaseSDK();
-        return new PairReference<>(new DuoReference<>(id, name), photo);
+        return new DoubleRef<>(new DuoRef<>(id, name), photo);
     }
 }

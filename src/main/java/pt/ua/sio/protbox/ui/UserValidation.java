@@ -3,10 +3,10 @@ package pt.ua.sio.protbox.ui;
 import org.slf4j.LoggerFactory;
 import pt.ua.sio.protbox.core.Constants;
 import pt.ua.sio.protbox.core.User;
-import pt.ua.sio.protbox.core.directory.Directory;
+import pt.ua.sio.protbox.core.directory.Registry;
 import pt.ua.sio.protbox.util.AWTUtils;
-import pt.ua.sio.protbox.util.referencewrappers.PairReference;
-import pt.ua.sio.protbox.util.referencewrappers.TripleReference;
+import pt.ua.sio.protbox.util.DoubleRef;
+import pt.ua.sio.protbox.util.TripleRef;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -30,18 +30,18 @@ public class UserValidation extends JFrame {
 
     private JLabel info, allow, deny;
 
-    public static UserValidation getInstance(final Directory directory, final String algorithm, final SecretKey key, final String sharedFolderName, final File askFile) {
+    public static UserValidation getInstance(final Registry directory, final String algorithm, final SecretKey key, final String sharedFolderName, final File askFile) {
         return new UserValidation(directory, algorithm, key, sharedFolderName, askFile);
     }
 
-    private UserValidation(final Directory directory, final String algorithm, final SecretKey directoryKey, final String sharedFolderName, final File askFile) {
+    private UserValidation(final Registry directory, final String algorithm, final SecretKey directoryKey, final String sharedFolderName, final File askFile) {
         super("A new user asked your permission to access the folder "+sharedFolderName+" - Protbox");
         this.setIconImage(Constants.ASSETS.get("box.png"));
         this.setLayout(null);
 
         final File parent = askFile.getParentFile();
         try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(askFile))){
-            final TripleReference<User, byte[], byte[]> receivedFileData = (TripleReference<User, byte[], byte[]>)in.readObject();
+            final TripleRef<User, byte[], byte[]> receivedFileData = (TripleRef<User, byte[], byte[]>)in.readObject();
             Constants.delete(askFile);
             final User newUser = receivedFileData.getFirst();
             final byte[] encodedPublicKey = receivedFileData.getSecond();
@@ -172,7 +172,7 @@ public class UserValidation extends JFrame {
             // SAVE DIRECTORY'S ALGORITHM AND ENCRYPTED KEY IN FILE
             File keyFile = new File(parent, "»key" + newUser.getId());
             try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(keyFile))) {
-                out.writeObject(new PairReference<>(algorithm, encodedKey));
+                out.writeObject(new DoubleRef<>(algorithm, encodedKey));
             }
 
             dispose();

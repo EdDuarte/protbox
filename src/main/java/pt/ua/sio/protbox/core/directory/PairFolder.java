@@ -5,17 +5,17 @@ import java.util.*;
 
 /**
  * PbxFolder is a entry that structures a folder in the Directory. Other than having the same
- * variables as {@link ProtboxPair}, this is also represented by a list of other folders and a list
+ * variables as {@link Pair}, this is also represented by a list of other folders and a list
  * of other files contained in this folder.
  *
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
  *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
  * @version 1.0
  */
-public final class PairFolder extends ProtboxPair implements Serializable {
+public final class PairFolder extends Pair implements Serializable {
     private static final long serialVersionUID = 1L;
     Set<PairFolder> folders;
-    Set<PbxFile> files;
+    Set<PairFile> files;
 
     PairFolder(final PairFolder parentFolder, final String encodedName, final String realName) {
         super(parentFolder, encodedName, realName);
@@ -28,21 +28,21 @@ public final class PairFolder extends ProtboxPair implements Serializable {
         return this;
     }
 
-    public PairFolder addFile(PbxFile f) {
+    public PairFolder addFile(PairFile f) {
         files.add(f);
         return this;
     }
 
-    void removeEntry(ProtboxPair e){
+    void removeEntry(Pair e){
         if(e instanceof PairFolder)
             folders.remove(e);
-        else if(e instanceof PbxFile)
+        else if(e instanceof PairFile)
             files.remove(e);
     }
 
-    PbxFile goToFile(String filename) {
+    PairFile goToFile(String filename) {
         if(files.size()!=0){
-            for(PbxFile f : files){
+            for(PairFile f : files){
                 if(f.realName().equalsIgnoreCase(filename) ||
                         f.encodedName().equalsIgnoreCase(filename))
                     return f;

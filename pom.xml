@@ -50,7 +50,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>pt.ua.sio.protbox.gui.Main</mainClass>
+                                    <mainClass>pt.ua.sio.protbox.ui.Main</mainClass>
                                 </manifest>
                                 <manifestEntries>
                                     <Class-Path>.</Class-Path>
