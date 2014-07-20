@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>pt.ua.sio</groupId>
+    <groupId>edduarte</groupId>
     <artifactId>protbox</artifactId>
     <version>1.0</version>
     <packaging>jar</packaging>
@@ -13,7 +13,7 @@
 
     <developers>
         <developer>
-            <id>ed</id>
+            <id>edduarte</id>
             <name>Eduardo Duarte</name>
             <email>emod@ua.pt</email>
             <organization>Universidade de Aveiro</organization>
@@ -50,7 +50,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>pt.ua.sio.protbox.ui.Main</mainClass>
+                                    <mainClass>edduarte.protbox.ui.Main</mainClass>
                                 </manifest>
                                 <manifestEntries>
                                     <Class-Path>.</Class-Path>
