@@ -1,4 +1,6 @@
 #intellij
+.idea
+protbox.iml
 
 #netbeans
 nbactions.xml
