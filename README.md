@@ -1,4 +1,4 @@
-![Logo](src/main/resources/protbox-splash.png)
+![Logo](src/main/resources/edduarte/protbox/assets/splash.png)
 =======
 
 **Multi-platform application** that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
