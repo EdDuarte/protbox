@@ -1,5 +1,6 @@
 package edduarte.protbox.ui;
 
+import edduarte.protbox.Main;
 import ij.io.DirectoryChooser;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.prompt.PromptSupport;

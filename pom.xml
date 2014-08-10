@@ -35,6 +35,16 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>2.2.1</version>
                 <executions>
@@ -50,7 +60,7 @@
                             </descriptorRefs>
                             <archive>
                                 <manifest>
-                                    <mainClass>edduarte.protbox.ui.Main</mainClass>
+                                    <mainClass>edduarte.protbox.Main</mainClass>
                                 </manifest>
                                 <manifestEntries>
                                     <Class-Path>.</Class-Path>
@@ -66,6 +76,22 @@
     </build>
 
     <dependencies>
+
+        <dependency>
+            <artifactId>prompt</artifactId>
+            <groupId>xswingx</groupId>
+            <scope>system</scope>
+            <version>1.0</version>
+            <systemPath>${basedir}/lib/prompt.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <artifactId>pteidlibJava</artifactId>
+            <groupId>pt.govv</groupId>
+            <scope>system</scope>
+            <version>1.0</version>
+            <systemPath>${basedir}/lib/pteidlibJava.jar</systemPath>
+        </dependency>
 
         <dependency>
             <groupId>org.swinglabs</groupId>

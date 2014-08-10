@@ -1,6 +1,6 @@
 package edduarte.protbox.core;
 
-import edduarte.protbox.ui.Main;
+import edduarte.protbox.Main;
 import org.apache.commons.io.FileDeleteStrategy;
 import org.apache.commons.io.FileUtils;
 
@@ -11,8 +11,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
 /**
  * Stores common elements or default values used throughout the application.
@@ -23,7 +21,7 @@ import java.util.zip.ZipFile;
  */
 public final class Constants {
 
-    public static boolean verbose = false;
+    public static boolean verboseMode = false;
 
     public static final String OS = System.getProperty("os.name").toLowerCase();
 
@@ -37,15 +35,17 @@ public final class Constants {
             .getAbsolutePath()
             .replaceAll("%20", " ");
 
-    private static final Map<String, BufferedImage> ASSETS = new HashMap<String, BufferedImage>();
+    private static final Map<String, BufferedImage> ASSETS = new HashMap<>();
 
     public static BufferedImage getAsset(String resourceFileName) {
         BufferedImage result = ASSETS.get(resourceFileName);
 
         if (result == null) {
             try {
-                InputStream stream = Main.class.getResourceAsStream("/" + resourceFileName);
+                InputStream stream =
+                        Main.class.getResourceAsStream(File.separator + "assets" + File.separator + resourceFileName);
                 result = ImageIO.read(stream);
+                ASSETS.put(resourceFileName, result);
 
             } catch (IOException e) {
                 JOptionPane.showMessageDialog(null,

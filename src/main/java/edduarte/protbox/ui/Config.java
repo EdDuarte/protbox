@@ -1,5 +1,6 @@
 package edduarte.protbox.ui;
 
+import edduarte.protbox.Main;
 import ij.io.DirectoryChooser;
 import org.apache.commons.io.FileUtils;
 import org.jdesktop.xswingx.PromptSupport;
@@ -40,7 +41,7 @@ public class Config extends JDialog {
 
     private static Map<Registry, Config> instances = new HashMap<>();
 
-    static void closeAllInstances(){
+    public static void closeAllInstances(){
         for(Registry d : instances.keySet()){
             instances.get(d).dispose();
         }

@@ -59,7 +59,7 @@ public final class DirectoryWatcher implements Runnable {
 
     private void run_aux() throws ProtException, IOException{
         try {
-            if(Constants.verbose) logger.info("WatchService for "+root.toString()+" start.");
+            if(Constants.verboseMode) logger.info("WatchService for "+root.toString()+" start.");
 
             while (!Thread.currentThread().isInterrupted()) {
                 try {
@@ -82,7 +82,7 @@ public final class DirectoryWatcher implements Runnable {
                                 if(directory.SKIP_WATCHER_ENTRIES.contains(absolutePath)){
                                     directory.SKIP_WATCHER_ENTRIES.removeAll(Collections.singleton(absolutePath));
                                 } else {
-                                    if(Constants.verbose) logger.info("DirectoryWatch["+directory.NAME +"|"+fromFolder.name()+"]: ADDED "+absolutePath);
+                                    if(Constants.verboseMode) logger.info("DirectoryWatch["+directory.NAME +"|"+fromFolder.name()+"]: ADDED "+absolutePath);
 
                                     if (path.toFile().isDirectory()) {
                                         watchFolder(path);
@@ -95,7 +95,7 @@ public final class DirectoryWatcher implements Runnable {
                                 if(directory.SKIP_WATCHER_ENTRIES.contains(absolutePath)){
                                     directory.SKIP_WATCHER_ENTRIES.removeAll(Collections.singleton(absolutePath));
                                 } else {
-                                    if(Constants.verbose) logger.info("DirectoryWatch["+directory.NAME +"|"+fromFolder.name()+"]: DELETED "+absolutePath);
+                                    if(Constants.verboseMode) logger.info("DirectoryWatch["+directory.NAME +"|"+fromFolder.name()+"]: DELETED "+absolutePath);
                                     directory.delete(path, fromFolder);
                                 }
                             }
@@ -109,7 +109,7 @@ public final class DirectoryWatcher implements Runnable {
                 }
             }
         } catch(InterruptedException ex){
-            if(Constants.verbose) logger.info("WatchService for "+root.toString()+" was interrupted.");
+            if(Constants.verboseMode) logger.info("WatchService for "+root.toString()+" was interrupted.");
         } finally {
             watchService.close();
         }

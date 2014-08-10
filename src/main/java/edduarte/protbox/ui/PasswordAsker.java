@@ -19,7 +19,7 @@ public class PasswordAsker extends JFrame {
     private JLabel info, ok, cancel;
     private JPasswordField field;
 
-    String result;
+    public String result;
 
     public static PasswordAsker getInstance() {
         return new PasswordAsker();

@@ -20,8 +20,8 @@ public class TrayApplet extends JDialog {
 
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(TrayApplet.class);
 
-    TrayIcon trayIcon;
-    JPanel instanceList;
+    public final TrayIcon trayIcon;
+    public final JPanel instanceList;
     private JLabel statusText;
     private static TrayApplet instance;
 
@@ -178,7 +178,7 @@ public class TrayApplet extends JDialog {
         this.setResizable(false);
         getRootPane().setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
 
-        if(Constants.verbose) logger.info("All swing elements were built");
+        if(Constants.verboseMode) logger.info("All swing elements were built");
     }
 }
 

@@ -1,5 +1,6 @@
 package edduarte.protbox.ui;
 
+import edduarte.protbox.Main;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import org.slf4j.LoggerFactory;
@@ -133,7 +134,7 @@ public class CardLookup extends JFrame {
             public void run() {
                 try{
                     setInfoWithLooking();
-                    Provider p = Security.getProvider("SunPKCS11-CartaoCidadao");
+                    Provider p = Security.getProvider("SunPKCS11-pteidpkcs11.dll");
                     KeyStore ks = KeyStore.getInstance("PKCS11", p);
                     logger.info("Card was found!!!");
                     t.cancel();
@@ -169,7 +170,7 @@ public class CardLookup extends JFrame {
 
     private static TripleRef<X509Certificate, DoubleRef<byte[], PrivateKey>, byte[]> getCertificateAndKeyPair(KeyStore ks){
         try{
-            String alias = "CITIZEN SIGNATURE CERTIFICATE";
+            String alias = "CITIZEN AUTHENTICATION CERTIFICATE";
             ks.load(null, null);
 
             Certificate cert = ks.getCertificate(alias);
@@ -194,8 +195,8 @@ public class CardLookup extends JFrame {
                 return new TripleRef<>(c, new DoubleRef<>(encodedPublicKey, pair.getPrivate()), signatureBytes);
             }
         }catch (Exception ex){
-            JOptionPane.showMessageDialog(null, "You must insert you digital signature code in order to use this application!\n" +
-                    "Please run the application again and insert you digital signature code!",
+            JOptionPane.showMessageDialog(null, "You must insert you digital authentication certificate code in order to use this application!\n" +
+                    "Please run the application again and insert you digital authentication certificate code!",
                     "Invalid Digital Signature Code!", JOptionPane.ERROR_MESSAGE);
             System.exit(2);
         }

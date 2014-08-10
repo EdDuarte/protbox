@@ -37,7 +37,7 @@ public class FolderValidation {
 
         for(Component c : TrayApplet.getInstance().instanceList.getComponents()){
             if(c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")){
-                Registry toCheck = ((InstanceCell)c).getDirectory();
+                Registry toCheck = ((InstanceCell)c).getProtReg();
                 Path existingDrop = Paths.get(toCheck.SHARED_PATH);
                 Path existingProt = Paths.get(toCheck.OUTPUT_PATH);
 

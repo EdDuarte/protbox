@@ -600,7 +600,7 @@ public final class Registry implements Serializable {
     }
 
     public void delete(Path filePath, Source fromFolder) throws ProtException {
-        if(Constants.verbose) logger.info("Deleting file "+filePath);
+        if(Constants.verboseMode) logger.info("Deleting file "+filePath);
 
         PairFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
         Pair toDelete;

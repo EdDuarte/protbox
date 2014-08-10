@@ -23,10 +23,10 @@ import java.nio.file.Paths;
 public class InstanceCell extends JLabel {
 
     private final JLabel revertButton, userButton, configButton;
-    private final Registry directory;
+    private final Registry protReg;
 
-    InstanceCell(final Registry directory){
-        this.directory = directory;
+    public InstanceCell(final Registry protReg){
+        this.protReg = protReg;
         setLayout(null);
         setBorder(new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
         setSize(312, 50);
@@ -38,7 +38,7 @@ public class InstanceCell extends JLabel {
         add(icon);
 
 
-        JLabel label = new JLabel(Paths.get(directory.SHARED_PATH).getFileName().toString());
+        JLabel label = new JLabel(Paths.get(protReg.SHARED_PATH).getFileName().toString());
         label.setBounds(50, 12, 100, 28);
         label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         add(label);
@@ -155,8 +155,8 @@ public class InstanceCell extends JLabel {
         configButton.setVisible(false);
     }
 
-    Registry getDirectory(){
-        return directory;
+    public Registry getProtReg(){
+        return protReg;
     }
 
 
@@ -183,7 +183,7 @@ public class InstanceCell extends JLabel {
 
         private void go(){
             try{
-                directory.openExplorerFolder(folderToOpen);
+                protReg.openExplorerFolder(folderToOpen);
                 mouseStopHovering();
             } catch (IOException ex){
                 System.err.println(ex);
@@ -198,7 +198,7 @@ public class InstanceCell extends JLabel {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    Restore.getInstance(directory);
+                    Restore.getInstance(protReg);
                 }
             });
         }
@@ -211,11 +211,11 @@ public class InstanceCell extends JLabel {
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
                 public void run() {
-                    File usersFile = new File(directory.SHARED_PATH, "»users");
+                    File usersFile = new File(protReg.SHARED_PATH, "»users");
 
                     try(ObjectInputStream in = new ObjectInputStream(new FileInputStream(usersFile))){
                         java.util.List<User> userList = (java.util.List<User>) in.readObject();
-                        UserList.getInstance(Paths.get(directory.SHARED_PATH).getFileName().toString(), userList, false);
+                        UserList.getInstance(Paths.get(protReg.SHARED_PATH).getFileName().toString(), userList, false);
                     }catch (IOException|ReflectiveOperationException ex) {
                         System.err.println(ex);
                     }
@@ -231,7 +231,7 @@ public class InstanceCell extends JLabel {
             mouseStopHovering();
             SwingUtilities.invokeLater(new Runnable() {
                 @Override
-                public void run() { Config.getInstance(directory, InstanceCell.this); }
+                public void run() { Config.getInstance(protReg, InstanceCell.this); }
             });
         }
     }
