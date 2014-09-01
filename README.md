@@ -1,6 +1,6 @@
 ![Logo](src/main/resources/edduarte/protbox/assets/splash.png)
 =======
-![Build](https://travis-ci.org/edduarte/protbox.svg?branch=master)
+[![Build Status](https://travis-ci.org/edduarte/protbox.svg?branch=master)](https://travis-ci.org/edduarte/protbox)
 
 **Multi-platform application** that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
 
