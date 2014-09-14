@@ -1,7 +1,7 @@
-package edduarte.protbox.ui;
+package edduarte.protbox.ui.window;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.util.AWTUtils;
+import edduarte.protbox.utils.Utils;
 
 import javax.swing.*;
 import java.awt.*;
@@ -9,18 +9,14 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>))
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 1.0
  */
-public class UserWaiting extends JFrame {
+public class WaitingForResponseWindow extends JFrame {
 
     private final javax.swing.Timer displayTimer;
 
-    public static UserWaiting getInstance() {
-        return new UserWaiting();
-    }
-    
-    private UserWaiting() {
+    private WaitingForResponseWindow() {
         super();
         this.setTitle("Waiting for user's response...");
         this.setIconImage(Constants.getAsset("box.png"));
@@ -28,11 +24,11 @@ public class UserWaiting extends JFrame {
 
         JLabel title = new JLabel("Waiting for user's response...");
         title.setBounds(10, 1, 250, 50);
-        title.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        title.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
         this.add(title);
         final JLabel timer = new JLabel();
         timer.setBounds(10, 22, 250, 50);
-        timer.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        timer.setFont(new Font(Constants.FONT, Font.PLAIN, 13));
         this.add(timer);
 
         this.setSize(270, 70);
@@ -41,7 +37,7 @@ public class UserWaiting extends JFrame {
         this.setBackground(Color.white);
         this.setResizable(false);
         this.getRootPane().setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
-        AWTUtils.setComponentLocationOnCenter(this);
+        Utils.setComponentLocationOnCenter(this);
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         this.setVisible(true);
 
@@ -51,10 +47,10 @@ public class UserWaiting extends JFrame {
 
             @Override
             public void actionPerformed(ActionEvent event) {
-                timer.setText("("+min+" min "+i+" seconds left until timeout)");
-                if(i == 0){
+                timer.setText("(" + min + " min " + i + " seconds left until timeout)");
+                if (i == 0) {
                     i = 60;
-                    min --;
+                    min--;
                 }
                 i--;
             }
@@ -63,6 +59,10 @@ public class UserWaiting extends JFrame {
         displayTimer = new javax.swing.Timer(1000, listener);
         displayTimer.setInitialDelay(1);
         displayTimer.start();
+    }
+
+    public static WaitingForResponseWindow getInstance() {
+        return new WaitingForResponseWindow();
     }
 
     @Override

@@ -15,15 +15,29 @@ import java.util.*;
 /**
  * Stores common elements or default values used throughout the application.
  *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
- *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
- * @version 1.0
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @version 2.0
  */
 public final class Constants {
 
-    public static boolean verboseMode = false;
 
-    public static final String OS = System.getProperty("os.name").toLowerCase();
+    public static boolean verbose = false;
+
+
+    public static final char SPECIAL_FILE_FIRST_CHAR = '_';
+
+
+    public static final String SPECIAL_FILE_ASK_PREFIX = SPECIAL_FILE_FIRST_CHAR + "ask";
+
+
+    public static final String SPECIAL_FILE_INVALID_PREFIX = SPECIAL_FILE_FIRST_CHAR + "invalid";
+
+
+    public static final String SPECIAL_FILE_KEY_PREFIX = SPECIAL_FILE_FIRST_CHAR + "key";
+
+
+    public static final String FONT = "Helvetica";
+
 
     public static final String INSTALL_DIR = new File(
             Constants.class.getProtectionDomain()
@@ -35,23 +49,34 @@ public final class Constants {
             .getAbsolutePath()
             .replaceAll("%20", " ");
 
+
+    public static final String PROVIDERS_DIR = new File(INSTALL_DIR, "providers").getAbsolutePath();
+
+
+    public static final String REGISTRIES_DIR = new File(INSTALL_DIR, "registries").getAbsolutePath();
+
+
+    private static final FileDeleteStrategy deleter = FileDeleteStrategy.FORCE;
+
+
     private static final Map<String, BufferedImage> ASSETS = new HashMap<>();
+
 
     public static BufferedImage getAsset(String resourceFileName) {
         BufferedImage result = ASSETS.get(resourceFileName);
 
         if (result == null) {
             try {
-                InputStream stream =
-                        Main.class.getResourceAsStream(File.separator + "assets" + File.separator + resourceFileName);
+                InputStream stream = Main.class.getResourceAsStream("assets" + File.separator + resourceFileName);
                 result = ImageIO.read(stream);
                 ASSETS.put(resourceFileName, result);
 
-            } catch (IOException e) {
+            } catch (IOException | IllegalArgumentException e) {
                 JOptionPane.showMessageDialog(null,
-                        "Asset file " + resourceFileName + " not detected or corrupted!\n Please reinstall the application.",
+                        "Asset file " + resourceFileName + " not detected or corrupted!\nPlease reinstall the application.",
                         "Nonexistent or corrupted asset file",
                         JOptionPane.ERROR_MESSAGE);
+                e.printStackTrace();
                 System.exit(1);
             }
         }
@@ -59,42 +84,39 @@ public final class Constants {
         return result;
     }
 
-    private static final FileDeleteStrategy deleter = FileDeleteStrategy.FORCE;
 
-    public static String generateUniqueDirID() {
-        String newID = "dir"+UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
-        if(new File(INSTALL_DIR, newID).exists())
-            return generateUniqueDirID();
-        else
-            return newID;
-    }
+    public static void delete(File fileToDelete) {
 
-    public static void delete(File fileToDelete){
-
-        if(fileToDelete==null)
+        if (fileToDelete == null) {
             return;
+        }
 
-        else if(!fileToDelete.exists())
+        else if (!fileToDelete.exists()) {
             return;
+        }
 
-        try{
+        try {
             deleter.delete(fileToDelete);
-        }catch (IOException ex){
+
+        } catch (IOException ex) {
             fileToDelete.deleteOnExit();
         }
     }
 
 
     /**
-     * Moves all contents from the first specified directory to the second specified
-     * directory, overriding if it already exists!
+     * Moves all contents from the first specified registry to the second specified
+     * registry, overriding if it already exists!
      */
     public static void moveContentsFromDirToDir(File fromDir, File toDir) throws IOException {
-        try{
+        try {
             File[] list = fromDir.listFiles();
-            for(File f : list){
+            if (list == null) {
+                return;
+            }
+            for (File f : list) {
                 File destination = new File(toDir, f.getName());
-                if(f.isDirectory()){
+                if (f.isDirectory()) {
                     destination.mkdir();
                     moveContentsFromDirToDir(f, destination);
                 } else {
@@ -102,13 +124,15 @@ public final class Constants {
                 }
                 Constants.delete(f);
             }
-        }catch (NullPointerException ex) {
-            throw new IOException("Specified directory is not a folder.", ex);
+        } catch (NullPointerException ex) {
+            throw new IOException("Specified registry is not a folder.", ex);
         }
     }
 
+
     /**
      * Get the current date and time
+     *
      * @return the current date and time
      */
     public static Date getToday() {

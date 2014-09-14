@@ -1,39 +1,37 @@
-package edduarte.protbox.ui;
+package edduarte.protbox.ui.window;
 
-import org.jdesktop.swingx.JXLabel;
-import org.jdesktop.swingx.border.DropShadowBorder;
-import org.slf4j.LoggerFactory;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.User;
-import edduarte.protbox.util.AWTUtils;
-import edduarte.protbox.util.Uno;
+import edduarte.protbox.ui.listeners.OnMouseClick;
+import edduarte.protbox.utils.Ref;
+import edduarte.protbox.utils.Utils;
+import org.jdesktop.swingx.JXLabel;
+import org.jdesktop.swingx.border.DropShadowBorder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.List;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
- *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>),
+ *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>)
  * @version 1.0
  */
-public class UserList extends JFrame {
-    private transient static org.slf4j.Logger logger = LoggerFactory.getLogger(UserList.class);
+public class UserListWindow extends JFrame {
+    private static final Logger logger = LoggerFactory.getLogger(UserListWindow.class);
 
-//    private Directory directory;
+//    private Directory registry;
 //    private static Map<Directory, UserList> instances = new HashMap<>();
-
-    Uno<User> result;
     private final boolean askingPermission;
+    Ref.Single<User> result;
 
-    public static UserList getInstance(final String sharedFolderName, final List<User> userList, final boolean askingPermission) {
-        return new UserList(sharedFolderName, userList, askingPermission);
-    }
-
-    private UserList(final String sharedFolderName, final List<User> userList, boolean askingPermission) {
-        super(sharedFolderName+"'s users - Protbox");
+    private UserListWindow(final String sharedFolderName, final List<User> userList, boolean askingPermission) {
+        super(sharedFolderName + "'s users - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.askingPermission = askingPermission;
         this.setLayout(null);
@@ -41,14 +39,9 @@ public class UserList extends JFrame {
         JLabel close = new JLabel(new ImageIcon(Constants.getAsset("close.png")));
         close.setLayout(null);
         close.setBounds(472, 7, 18, 18);
-        close.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
         close.setForeground(Color.gray);
-        close.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                dispose();
-            }
-        });
+        close.addMouseListener((OnMouseClick) e -> dispose());
         this.add(close);
 
 
@@ -59,10 +52,10 @@ public class UserList extends JFrame {
         jList.setListData(userList.toArray(new User[0]));
 
         final int[] over = new int[1];
-        jList.addMouseListener(new MouseAdapter() {
+        jList.addMouseListener(new OnMouseClick() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                if(jList.getSelectedValue()!=null){
+                if (jList.getSelectedValue() != null) {
                     action.setEnabled(true);
                 }
             }
@@ -103,34 +96,19 @@ public class UserList extends JFrame {
                 list.setFixedCellHeight(32);
 
                 User user = ((User) value);
-                setFont(new Font("Segoe UI", Font.PLAIN, 13));
-                ImageIcon imageIcon = user.getPhoto();
-                setIcon(imageIcon);
+                setFont(new Font(Constants.FONT, Font.PLAIN, 13));
 
                 JLabel machineName = new JLabel();
-                machineName.setText("Machine Name: "+user.getMachineName());
-                machineName.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+                machineName.setText("Machine Name: " + user.getMachineName());
+                machineName.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
                 machineName.setBounds(106, 90, 370, 50);
                 add(machineName);
-
-
-                JLabel availableIcon = new JLabel();
-                availableIcon.setBounds(450, 44, 50, 50);
-                if(user.isAvailable()){
-                    availableIcon.setIcon(new ImageIcon(Constants.getAsset("status_online.png")));
-                    availableIcon.setToolTipText("Available");
-                }
-                else{
-                    availableIcon.setIcon(new ImageIcon(Constants.getAsset("status_offline.png")));
-                    availableIcon.setToolTipText("Unavailable");
-                }
-                add(availableIcon);
 
                 return label;
             }
         });
 
-        if(!askingPermission){
+        if (!askingPermission) {
             jList.setSelectionModel(new DefaultListSelectionModel() {
                 @Override
                 public void setSelectionInterval(int index0, int index1) {
@@ -140,23 +118,22 @@ public class UserList extends JFrame {
         }
 
 
-        
         final JScrollPane scroll = new JScrollPane(jList,
                 JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
                 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.setBorder(new DropShadowBorder());
         scroll.setBorder(new LineBorder(Color.lightGray));
-        if(askingPermission)
+        if (askingPermission)
             scroll.setBounds(2, 100, 494, 360);
         else
             scroll.setBounds(2, 30, 494, 360);
-        this.add(scroll);
+        add(scroll);
 
-        if(askingPermission){
+        if (askingPermission) {
             JXLabel info = new JXLabel("<html><b>You will need to ask for permission in order to access this folder's contents.</b><br>" +
                     "Please choose from the list below which user from this folder do you wish to ask permission for access:</html>");
             info.setLineWrap(true);
-            info.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+            info.setFont(new Font(Constants.FONT, Font.PLAIN, 13));
             info.setBounds(10, 25, 470, 70);
             add(info);
 
@@ -164,38 +141,22 @@ public class UserList extends JFrame {
             action.setBounds(120, 465, 180, 39);
             action.setBackground(Color.black);
             action.setEnabled(false);
-            action.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    if(action.isEnabled()){
-                        User selectedUser = jList.getSelectedValue();
-                        if(!selectedUser.isAvailable()) { // Not available
-                            JOptionPane.showMessageDialog(UserList.this, "The requested user is currently " +
-                                    "not available. Please try again later or choose another user.");
-                        } else {
-                            result = new Uno<>(selectedUser);
-                            dispose();
-                        }
-                    }
+            action.addMouseListener((OnMouseClick) e -> {
+                if (action.isEnabled()) {
+                    User selectedUser = jList.getSelectedValue();
+                        result = Ref.of1(selectedUser);
+                        dispose();
                 }
             });
-            this.add(action);
+            add(action);
 
             final JLabel cancel = new JLabel(new ImageIcon(Constants.getAsset("cancel.png")));
             cancel.setLayout(null);
             cancel.setBounds(290, 465, 122, 39);
             cancel.setBackground(Color.black);
-            cancel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    dispose();
-                }
-            });
-            this.add(cancel);
+            cancel.addMouseListener((OnMouseClick) e -> dispose());
+            add(cancel);
         }
-
-
-
 
 
 //        this.addWindowFocusListener(new WindowFocusListener() {
@@ -218,41 +179,48 @@ public class UserList extends JFrame {
 //            }
 //        });
 
-        if(askingPermission)
-            this.setSize(500, 512);
-        else
-            this.setSize(500, 400);
+        if (askingPermission) {
+            setSize(500, 512);
+        } else {
+            setSize(500, 400);
+        }
 
-        this.setUndecorated(true);
-        this.getContentPane().setBackground(Color.white);
-        this.setBackground(Color.white);
-        this.setResizable(false);
+        setUndecorated(true);
+        getContentPane().setBackground(Color.white);
+        setBackground(Color.white);
+        setResizable(false);
         getRootPane().setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
-        AWTUtils.setComponentLocationOnCenter(this);
-        this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        this.setVisible(true);
+        Utils.setComponentLocationOnCenter(this);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        setVisible(true);
     }
 
-    private void expandTree(JTree tree) {
 
+    public static UserListWindow getInstance(final String sharedFolderName, final List<User> userList, final boolean askingPermission) {
+        return new UserListWindow(sharedFolderName, userList, askingPermission);
+    }
+
+
+    private void expandTree(JTree tree) {
         for (int i = 0; i < tree.getRowCount(); i++) {
             tree.expandRow(i);
         }
     }
 
+
     @Override
-    public void dispose(){
-        if(askingPermission && result==null){
+    public void dispose() {
+        if (askingPermission && result == null) {
             if (JOptionPane.showConfirmDialog(
-                    UserList.this, "Are you sure you wish to cancel? You need " +
-                    "to ask for permission in order to access this folder!\n",
+                    UserListWindow.this, "Are you sure you wish to cancel? You need " +
+                            "to ask for permission in order to access this folder!\n",
                     "Confirm Cancel",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
-                result = new Uno<>(null);
+                result = Ref.of1(null);
                 super.dispose();
             }
-        } else{
+        } else {
             super.dispose();
         }
     }

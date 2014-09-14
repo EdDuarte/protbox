@@ -1,89 +1,102 @@
 package edduarte.protbox.core.synchronization;
 
-import org.apache.commons.io.FileUtils;
-import org.slf4j.LoggerFactory;
-import edduarte.protbox.core.directory.*;
+import edduarte.protbox.core.Constants;
+import edduarte.protbox.core.Folder;
+import edduarte.protbox.core.registry.*;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.util.DuoRef;
+import edduarte.protbox.utils.Ref;
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.security.GeneralSecurityException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
- *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
- * @version 1.0
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @version 2.0
  */
 public final class Sync {
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(Sync.class);
+    private static final Logger logger = LoggerFactory.getLogger(Sync.class);
 
-    private static final Queue<SyncEntry> toOutput = new PriorityBlockingQueue<>(10, new FileSizeComparator());
-
-    private static final Queue<SyncEntry> toShared = new PriorityBlockingQueue<>(10, new FileSizeComparator());
-
+    private static final Queue<SyncPair> toProt = new PriorityBlockingQueue<>(10, new FileSizeComparator());
+    private static final Queue<SyncPair> toShared = new PriorityBlockingQueue<>(10, new FileSizeComparator());
     private static Thread t1, t2; // singleton threads
 
-
-    private Sync(){}
-
+    private Sync() {
+    }
 
     public static void start() {
-        if(t1==null) {
-            t1 = new Thread(new SharedToOutput());
+        if (t1 == null) {
+            t1 = new Thread(new SharedToProt());
             t1.start();
         }
-        if(t2==null){
-            t2 = new Thread(new OutputToShared());
+        if (t2 == null) {
+            t2 = new Thread(new ProtToShared());
             t2.start();
         }
-        logger.info("Started syncing threads");
+
+        if (Constants.verbose) {
+            logger.info("Started syncing threads");
+        }
     }
 
 
     public static void stop() {
-        if(t1!=null){
+        if (t1 != null) {
             t1.interrupt();
             t1 = null;
         }
-        if(t2!=null){
+        if (t2 != null) {
             t2.interrupt();
             t2 = null;
         }
-        logger.info("Stopped syncing threads");
+
+        if (Constants.verbose) {
+            logger.info("Stopped syncing threads");
+        }
     }
 
 
-    public static void toOutput(final Registry directory, final Pair newPbxEntry) {
-        // check if toShared has the same corresponding entry (incoming conflict syncing)
-        if(!findConflict(directory, newPbxEntry, toShared))
-            toOutput.add(new SyncEntry(directory, newPbxEntry));
+    public static void toProt(final PReg reg, final Pair newPair) {
+        // check if toShared queue has the same corresponding pair (incoming conflict synchronization)
+        if (!findConflict(reg, newPair, toShared))
+            toProt.add(new SyncPair(reg, newPair));
     }
 
 
-    public static void toShared(final Registry directory, final Pair newPbxEntry) {
-        // check if toOutput has the same corresponding entry (incoming conflict syncing)
-        if(!findConflict(directory, newPbxEntry, toOutput))
-            toShared.add(new SyncEntry(directory, newPbxEntry));
+    public static void toShared(final PReg directory, final Pair newPair) {
+        // check if toProt queue has the same corresponding pair (incoming conflict synchronization)
+        if (!findConflict(directory, newPair, toProt))
+            toShared.add(new SyncPair(directory, newPair));
     }
 
 
-    private static boolean findConflict(final Registry directory, final Pair newPbxEntry, Queue<SyncEntry> queueToCheck){
-        for(SyncEntry e : queueToCheck){
-            if(e.entry.equals(newPbxEntry)){
-                try{
-                    // removes it from that place
+    private static boolean findConflict(final PReg reg, final Pair newPair, Queue<SyncPair> queueToCheck) {
+        for (SyncPair e : queueToCheck) {
+            if (e.pair.equals(newPair)) {
+                try {
+
+                    // removes it from that queue
                     queueToCheck.remove(e);
-                    File protFile = new File(directory.OUTPUT_PATH + File.separator + newPbxEntry.relativeRealPath());
+                    File protFile = new File(reg.PROT_PATH + File.separator + newPair.relativeRealPath());
 
-                    directory.addConflicted(protFile, Source.PROT);
-                    Sync.toOutput(directory, newPbxEntry);
+                    reg.addConflicted(protFile, Folder.PROT);
+                    Sync.toProt(reg, newPair);
 
                     return true;
-                }catch (ProtException ex){
-                    logger.error(ex.toString());
+
+                } catch (ProtException ex) {
+                    if (Constants.verbose) {
+                        logger.error("Error while finding conflicted synchronization requests.", ex);
+                    }
                 }
             }
         }
@@ -92,135 +105,138 @@ public final class Sync {
     }
 
 
-    public static DuoRef<List<Pair>> removeEntriesOfDirectory(final Registry directory) {
-        List<Pair> toOutputRemoved = new ArrayList<>();
+    public static Ref.Duo<List<Pair>> removeSyncPairsForReg(final PReg reg) {
+        List<Pair> toProtRemoved = new ArrayList<>();
         List<Pair> toSharedRemoved = new ArrayList<>();
 
-        for (SyncEntry e : toOutput) {
-            if (e.directory.equals(directory)) {
-                toOutputRemoved.add(e.entry);
-                toOutput.remove(e);
-            }
-        }
-        for (SyncEntry e : toShared) {
-            if (e.directory.equals(directory)) {
-                toSharedRemoved.add(e.entry);
-                toShared.remove(e);
-            }
+        toProt.stream()
+                .filter(e -> e.reg.equals(reg))
+                .forEach(e -> {
+                    toProtRemoved.add(e.pair);
+                    toProt.remove(e);
+                });
+
+        toShared.stream()
+                .filter(e -> e.reg.equals(reg))
+                .forEach(e -> {
+                    toSharedRemoved.add(e.pair);
+                    toShared.remove(e);
+                });
+
+        if (Constants.verbose) {
+            logger.info("Removed entries of registry " + reg.ID);
         }
 
-        logger.info("Removed entries of directory " + directory.NAME);
-        return new DuoRef<>(toOutputRemoved, toSharedRemoved);
+        return Ref.of1(toProtRemoved, toSharedRemoved);
     }
 
 
-    // Thread that deals with shared to output PbxEntry movements
-    private static class SharedToOutput implements Runnable {
-        @Override
-        public void run() {
-            boolean statusOK = true;
-            while(!Thread.currentThread().isInterrupted()){
-
-                while (!toOutput.isEmpty()){
-                    try{
-                        statusOK = false;
-                        TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toOutput.size()+ toShared.size())+" files");
-                        SyncEntry polled = toOutput.poll();
-                        Registry directory = polled.directory;
-                        Pair toCreate = polled.entry;
-
-                        File sharedFile = new File(directory.SHARED_PATH + File.separator + toCreate.relativeEncodedPath());
-                        File outputFile = new File(directory.OUTPUT_PATH + File.separator + toCreate.relativeRealPath());
-
-                        directory.SKIP_WATCHER_ENTRIES.add(outputFile.getAbsolutePath());
-                        if(toCreate instanceof PairFile)
-                            writeAonB(directory, ((PairFile)toCreate), Source.SHARED, sharedFile, outputFile);
-                        else if(toCreate instanceof PairFolder){
-                            outputFile.mkdir();
-                        }
-
-                    }catch (Exception ex) {
-                        logger.info(ex.toString());
-                        ex.printStackTrace();
-                    }
-                }
-
-                if(!statusOK){
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.OKAY, "");
-                    statusOK = true;
-                }
-
-                try{
-                    Thread.sleep(100);
-                }catch (InterruptedException ex){}
-            }
-        }
-    }
-
-    // Thread that deals with output to shared PbxEntry movements
-    private static class OutputToShared implements Runnable {
-        @Override
-        public void run() {
-            boolean statusOK = true;
-            while(!Thread.currentThread().isInterrupted()){
-
-                while (!toShared.isEmpty()){
-                    try{
-                        statusOK = false;
-                        TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toOutput.size()+toShared.size())+" files");
-                        SyncEntry polled = toShared.poll();
-                        Registry directory = polled.directory;
-                        Pair toCreate = polled.entry;
-
-                        File outputFile = new File(directory.OUTPUT_PATH + File.separator + toCreate.relativeRealPath());
-                        File sharedFile = new File(directory.SHARED_PATH + File.separator + toCreate.relativeEncodedPath());
-
-                        directory.SKIP_WATCHER_ENTRIES.add(sharedFile.getAbsolutePath());
-                        if(toCreate instanceof PairFile)
-                            writeAonB(directory, ((PairFile)toCreate), Source.PROT, outputFile, sharedFile);
-                        else if(toCreate instanceof PairFolder){
-                            sharedFile.mkdir();
-                            try{
-                                new File(sharedFile, "»==").createNewFile();
-                            }catch (IOException ex){}
-                        }
-
-                    }catch (Exception ex) {
-                        logger.info(ex.toString());
-                        ex.printStackTrace();
-                    }
-                }
-
-                if(!statusOK){
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.OKAY, "");
-                    statusOK = true;
-                }
-
-
-                try{
-                    Thread.sleep(100);
-                }catch (InterruptedException ex){}
-            }
-        }
-    }
-
-    private static void writeAonB(final Registry directory, final PairFile entry, final Source folderOfA, final File A, final File B){
+    private static void writeAonB(final PReg directory, final PairFile entry, final Folder folderOfA, final File a, final File b) {
         new Thread() {
             @Override
             public void run() {
-                try{
-                    byte[] data = FileUtils.readFileToByteArray(A);
-                    if(folderOfA.equals(Source.SHARED))
+                try {
+                    byte[] data = FileUtils.readFileToByteArray(a);
+                    if (folderOfA.equals(Folder.SHARED))
                         data = directory.decrypt(data);
-                    else if(folderOfA.equals(Source.PROT))
+                    else if (folderOfA.equals(Folder.PROT))
                         data = directory.encrypt(data);
 
-                    FileUtils.writeByteArrayToFile(B, data);
-                    long newLM = A.lastModified();
-                    entry.setLastModified(newLM);
-                    B.setLastModified(newLM);
-                }catch (Exception ex){}
+                    FileUtils.writeByteArrayToFile(b, data);
+                    long newLM = a.lastModified();
+                    entry.setLastModified(new Date(newLM));
+                    b.setLastModified(newLM);
+
+                } catch (IOException|GeneralSecurityException ex) {
+                    if (Constants.verbose) {
+                        logger.error("Error while syncing file " + a.getName() + " from " + folderOfA.name().toLowerCase() + " folder.", ex);
+                    }
+                }
             }
         }.start();
+    }
+
+
+    // Thread that deals with shared to prot pair movements
+    private static class SharedToProt implements Runnable {
+        @Override
+        public void run() {
+            boolean statusOK = true;
+            while (!Thread.currentThread().isInterrupted()) {
+
+                if (!toProt.isEmpty()) {
+                    statusOK = false;
+                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toProt.size() + toShared.size()) + " files");
+                }
+
+                while (!toProt.isEmpty()) {
+                    SyncPair polled = toProt.poll();
+                    PReg reg = polled.reg;
+                    Pair pairToSync = polled.pair;
+
+                    File sharedFile = new File(reg.SHARED_PATH + File.separator + pairToSync.relativeEncodedPath());
+                    File protFile = new File(reg.PROT_PATH + File.separator + pairToSync.relativeRealPath());
+
+                    reg.SKIP_WATCHER_ENTRIES.add(protFile.getAbsolutePath());
+                    if (pairToSync instanceof PairFile)
+                        writeAonB(reg, ((PairFile) pairToSync), Folder.SHARED, sharedFile, protFile);
+                    else if (pairToSync instanceof PairFolder) {
+                        protFile.mkdir();
+                    }
+                }
+
+                if (!statusOK) {
+                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.OKAY, "");
+                    statusOK = true;
+                }
+
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
+    }
+
+    // Thread that deals with prot to shared pair movements
+    private static class ProtToShared implements Runnable {
+        @Override
+        public void run() {
+            boolean statusOK = true;
+            while (!Thread.currentThread().isInterrupted()) {
+
+                if (!toProt.isEmpty()) {
+                    statusOK = false;
+                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toProt.size() + toShared.size()) + " files");
+                }
+
+                while (!toShared.isEmpty()) {
+                    SyncPair polled = toShared.poll();
+                    PReg reg = polled.reg;
+                    Pair pairToSync = polled.pair;
+
+                    File protFile = new File(reg.PROT_PATH + File.separator + pairToSync.relativeRealPath());
+                    File sharedFile = new File(reg.SHARED_PATH + File.separator + pairToSync.relativeEncodedPath());
+
+                    reg.SKIP_WATCHER_ENTRIES.add(sharedFile.getAbsolutePath());
+                    if (pairToSync instanceof PairFile)
+                        writeAonB(reg, ((PairFile) pairToSync), Folder.PROT, protFile, sharedFile);
+                    else if (pairToSync instanceof PairFolder) {
+                        sharedFile.mkdir();
+                    }
+
+                }
+
+                if (!statusOK) {
+                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.OKAY, "");
+                    statusOK = true;
+                }
+
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                }
+            }
+        }
     }
 }

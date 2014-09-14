@@ -1,9 +1,7 @@
-
 package edduarte.protbox.exception;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)),
- *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>))
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 1.0
  */
 public class ProtException extends Exception {
@@ -11,6 +9,7 @@ public class ProtException extends Exception {
 
     /**
      * Constructor with message.
+     *
      * @param m Associated message.
      */
     public ProtException(final String m) {
@@ -19,6 +18,7 @@ public class ProtException extends Exception {
 
     /**
      * Constructor with protbox.exception.
+     *
      * @param e Associated protbox.exception.
      */
     public ProtException(final Exception e) {
@@ -27,6 +27,7 @@ public class ProtException extends Exception {
 
     /**
      * Constructor with message and throwable protbox.exception.
+     *
      * @param m Associated message.
      * @param t Associated throwable protbox.exception.
      */
