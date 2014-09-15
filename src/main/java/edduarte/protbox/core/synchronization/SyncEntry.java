@@ -1,19 +1,19 @@
 package edduarte.protbox.core.synchronization;
 
 import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.core.registry.Pair;
+import edduarte.protbox.core.registry.PRegEntry;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 1.0
  */
-final class SyncPair {
+final class SyncEntry {
     final PReg reg;
-    final Pair pair;
+    final PRegEntry PRegEntry;
 
-    SyncPair(PReg reg, Pair pair) {
+    SyncEntry(PReg reg, PRegEntry PRegEntry) {
         this.reg = reg;
-        this.pair = pair;
+        this.PRegEntry = PRegEntry;
     }
 
     @Override
@@ -25,9 +25,9 @@ final class SyncPair {
             return true;
         }
 
-        if (obj instanceof SyncPair) {
-            SyncPair se = (SyncPair) obj;
-            return this == se || this.reg.equals(se.reg) && this.pair.equals(se.pair);
+        if (obj instanceof SyncEntry) {
+            SyncEntry se = (SyncEntry) obj;
+            return this == se || this.reg.equals(se.reg) && this.PRegEntry.equals(se.PRegEntry);
         }
         return false;
     }

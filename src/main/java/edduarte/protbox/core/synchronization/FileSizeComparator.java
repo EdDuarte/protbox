@@ -1,8 +1,8 @@
 package edduarte.protbox.core.synchronization;
 
-import edduarte.protbox.core.registry.Pair;
-import edduarte.protbox.core.registry.PairFile;
-import edduarte.protbox.core.registry.PairFolder;
+import edduarte.protbox.core.registry.PRegEntry;
+import edduarte.protbox.core.registry.PRegFile;
+import edduarte.protbox.core.registry.PRegFolder;
 
 import java.util.Comparator;
 
@@ -10,24 +10,24 @@ import java.util.Comparator;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-final class FileSizeComparator implements Comparator<SyncPair> {
+final class FileSizeComparator implements Comparator<SyncEntry> {
 
-    public int compare(SyncPair sEntry1, SyncPair sEntry2) {
-        Pair entry1 = sEntry1.pair;
-        Pair entry2 = sEntry2.pair;
+    public int compare(SyncEntry sEntry1, SyncEntry sEntry2) {
+        PRegEntry entry1 = sEntry1.PRegEntry;
+        PRegEntry entry2 = sEntry2.PRegEntry;
 
-        if (entry1 instanceof PairFolder && entry2 instanceof PairFile) {
+        if (entry1 instanceof PRegFolder && entry2 instanceof PRegFile) {
             return -1;
 
-        } else if (entry1 instanceof PairFile && entry2 instanceof PairFolder) {
+        } else if (entry1 instanceof PRegFile && entry2 instanceof PRegFolder) {
             return 1;
 
-        } else if (entry1 instanceof PairFolder && entry2 instanceof PairFolder) {
+        } else if (entry1 instanceof PRegFolder && entry2 instanceof PRegFolder) {
             return 0;
 
-        } else if (entry1 instanceof PairFile && entry2 instanceof PairFile) {
-            long file1Size = ((PairFile) entry1).getFileSize();
-            long file2Size = ((PairFile) entry2).getFileSize();
+        } else if (entry1 instanceof PRegFile && entry2 instanceof PRegFile) {
+            long file1Size = ((PRegFile) entry1).getFileSize();
+            long file2Size = ((PRegFile) entry2).getFileSize();
             if (file1Size < file2Size) {
                 return -1;
 

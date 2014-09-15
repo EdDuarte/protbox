@@ -18,15 +18,12 @@ import java.awt.event.MouseMotionAdapter;
 import java.util.List;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>),
- *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>)
- * @version 1.0
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @version 2.0
  */
 public class UserListWindow extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(UserListWindow.class);
 
-//    private Directory registry;
-//    private static Map<Directory, UserList> instances = new HashMap<>();
     private final boolean askingPermission;
     Ref.Single<User> result;
 

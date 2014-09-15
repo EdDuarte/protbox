@@ -20,12 +20,12 @@ import java.nio.file.Paths;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public class PRegCell extends JLabel {
+public class PairPanel extends JLabel {
 
     private final JLabel revertButton, configButton;
     private final PReg reg;
 
-    public PRegCell(final PReg reg) {
+    public PairPanel(final PReg reg) {
         this.reg = reg;
         setLayout(null);
         setBorder(new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
@@ -174,7 +174,7 @@ public class PRegCell extends JLabel {
         @Override
         public void mouseClicked(MouseEvent e) {
             mouseStopHovering();
-            SwingUtilities.invokeLater(() -> ConfigurationWindow.getInstance(reg, PRegCell.this));
+            SwingUtilities.invokeLater(() -> ConfigurationWindow.getInstance(reg, PairPanel.this));
         }
     }
 }

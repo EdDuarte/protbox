@@ -25,9 +25,8 @@ import java.util.Map;
 import java.util.TimerTask;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>),
- *         Filipe Pinheiro (<a href="mailto:filipepinheiro@ua.pt">filipepinheiro@ua.pt</a>)
- * @version 1.0
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @version 2.0
  */
 public class UserValidationWindow extends JFrame {
 

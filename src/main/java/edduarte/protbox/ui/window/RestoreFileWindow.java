@@ -1,10 +1,9 @@
 package edduarte.protbox.ui.window;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.core.registry.Pair;
-import edduarte.protbox.core.registry.PairFile;
-import edduarte.protbox.core.registry.PairFolder;
+import edduarte.protbox.core.registry.*;
+import edduarte.protbox.core.registry.PRegEntry;
+import edduarte.protbox.core.registry.PRegFile;
 import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
@@ -102,7 +101,7 @@ public class RestoreFileWindow extends JDialog {
         permanent.addMouseListener((OnMouseClick) e -> {
             if (permanent.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                Pair entry = (Pair) node.getUserObject();
+                PRegEntry entry = (PRegEntry) node.getUserObject();
 
                 registry.permanentDelete(entry);
                 dispose();
@@ -120,7 +119,7 @@ public class RestoreFileWindow extends JDialog {
         action.addMouseListener((OnMouseClick) e -> {
             if (action.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                Pair entry = (Pair) node.getUserObject();
+                PRegEntry entry = (PRegEntry) node.getUserObject();
                 registry.showPair(entry);
                 dispose();
             }
@@ -131,7 +130,7 @@ public class RestoreFileWindow extends JDialog {
         tree.addMouseListener((OnMouseClick) e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null) {
-                Pair entry = (Pair) node.getUserObject();
+                PRegEntry entry = (PRegEntry) node.getUserObject();
                 if (entry.isHidden()) {
                     permanent.setEnabled(true);
                     action.setEnabled(true);
@@ -220,18 +219,18 @@ public class RestoreFileWindow extends JDialog {
             tree.setRowHeight(32);
 
             // rendering font and ASSETS
-            Pair entry = (Pair) ((DefaultMutableTreeNode) value).getUserObject();
+            PRegEntry entry = (PRegEntry) ((DefaultMutableTreeNode) value).getUserObject();
             setFont(new Font(Constants.FONT, Font.PLAIN, 13));
 
 
-            if (entry instanceof PairFile) {
+            if (entry instanceof PRegFile) {
                 if (entry.isHidden()) {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of deleted file
                     setForeground(Color.gray);
                 } else {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of normal file
                 }
-            } else if (entry instanceof PairFolder) {
+            } else if (entry instanceof PRegFolder) {
                 if (entry.isHidden()) {
                     setIcon(new ImageIcon(Constants.getAsset("folder.png"))); // image of deleted file
                     setForeground(Color.gray);

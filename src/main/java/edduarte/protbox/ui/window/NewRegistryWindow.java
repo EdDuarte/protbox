@@ -8,7 +8,7 @@ import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.FolderValidation;
 import edduarte.protbox.Main;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.ui.panels.PRegCell;
+import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
@@ -262,7 +262,7 @@ public class NewRegistryWindow extends JFrame {
         try {
             PReg directory = new PReg(Main.getUser(), path1.getText(), path2.getText(), algorithm, encryptionKey, integrityKey, isANewDirectory);
             directory.initialize();
-            JLabel l = new PRegCell(directory);
+            JLabel l = new PairPanel(directory);
             l.setMinimumSize(new Dimension(0, 50));
             l.setPreferredSize(new Dimension(0, 50));
             JPanel instanceList = TrayApplet.getInstance().instanceList;

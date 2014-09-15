@@ -5,7 +5,7 @@ import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.FolderValidation;
 import edduarte.protbox.Main;
-import edduarte.protbox.ui.panels.PRegCell;
+import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
@@ -38,7 +38,7 @@ public class ConfigurationWindow extends JDialog {
     private JTextField path;
     private JLabel ok;
 
-    private ConfigurationWindow(final PReg reg, final PRegCell instanceCell) {
+    private ConfigurationWindow(final PReg reg, final PairPanel instanceCell) {
         super();
         this.reg = reg;
         setLayout(null);
@@ -174,7 +174,7 @@ public class ConfigurationWindow extends JDialog {
         instances.clear();
     }
 
-    public static ConfigurationWindow getInstance(final PReg directory, final PRegCell instanceCell) {
+    public static ConfigurationWindow getInstance(final PReg directory, final PairPanel instanceCell) {
         ConfigurationWindow newInstance = instances.get(directory);
         if (newInstance == null) {
             newInstance = new ConfigurationWindow(directory, instanceCell);

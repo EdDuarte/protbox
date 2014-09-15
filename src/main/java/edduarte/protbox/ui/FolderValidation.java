@@ -1,7 +1,7 @@
 package edduarte.protbox.ui;
 
 import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.ui.panels.PRegCell;
+import edduarte.protbox.ui.panels.PairPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,7 +11,7 @@ import java.nio.file.Paths;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
+ * @version 2.0
  */
 public class FolderValidation {
 
@@ -43,7 +43,7 @@ public class FolderValidation {
 
         for (Component c : TrayApplet.getInstance().instanceList.getComponents()) {
             if (c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")) {
-                PReg toCheck = ((PRegCell) c).getRegistry();
+                PReg toCheck = ((PairPanel) c).getRegistry();
                 Path existingShared = Paths.get(toCheck.SHARED_PATH);
                 Path existingProt = Paths.get(toCheck.PROT_PATH);
 

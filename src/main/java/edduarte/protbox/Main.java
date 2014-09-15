@@ -6,7 +6,7 @@ import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.ui.panels.PRegCell;
+import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.ui.window.eIDTokenLoadingWindow;
 import edduarte.protbox.ui.window.InsertPasswordWindow;
 import edduarte.protbox.ui.window.NewRegistryWindow;
@@ -254,7 +254,7 @@ public class Main {
                     } else {
                         // start the registry
                         reg.initialize();
-                        PRegCell l = new PRegCell(reg);
+                        PairPanel l = new PairPanel(reg);
                         trayApplet.instanceList.add(l);
                         if (Constants.verbose) {
                             logger.info("Added registry " + reg.ID + " to instance list...");
@@ -287,7 +287,7 @@ public class Main {
             Cipher cipher = Cipher.getInstance("AES");
             for (Component c : trayApplet.instanceList.getComponents()) {
                 if (c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")) {
-                    PReg toSerialize = ((PRegCell) c).getRegistry();
+                    PReg toSerialize = ((PairPanel) c).getRegistry();
 
                     // stops the registry, which stops the running threads and processes
                     toSerialize.stop();

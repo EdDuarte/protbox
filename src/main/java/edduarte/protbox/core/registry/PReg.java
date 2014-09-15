@@ -9,7 +9,6 @@ import edduarte.protbox.core.watcher.PRegWatcher;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.window.UserValidationWindow;
-import edduarte.protbox.utils.Callback;
 import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
 import org.apache.commons.codec.binary.Base64;
@@ -38,7 +37,7 @@ import java.util.List;
  * and sub-folders, encrypted and decrypted names, last modified dates and lengths of contents).
  *
  * Coherency checking and synchronization tasks run on a periodic basis and use that structural
- * information and the effective contents of each {@link Pair} to take the appropriate data
+ * information and the effective contents of each {@link PRegEntry} to take the appropriate data
  * transfer decisions.
  *
  * Note that a PReg is a local, private data structure that helps a local {\protbox} instance to
@@ -114,7 +113,7 @@ public final class PReg implements Serializable {
     /**
      * The initial pair that links to every other pair through a node-based implementation.
      */
-    private PairFolder root;
+    private PRegFolder root;
 
 
     /**
@@ -156,7 +155,7 @@ public final class PReg implements Serializable {
         this.INTEGRITY_KEY = integrityKey;
         this.SKIP_WATCHER_ENTRIES = new ArrayList<>();
         this.initialized = false;
-        this.root = new PairFolder(null, "", "");
+        this.root = new PRegFolder(null, "", "");
         if (isANewPReg) {
             try {
                 Constants.moveContentsFromDirToDir(sharedPathFile, protPathFile);
@@ -166,9 +165,9 @@ public final class PReg implements Serializable {
         }
     }
 
-    private static void emptyData(Pair pair) {
-        if (pair instanceof PairFile) {
-            PairFile pairFile = (PairFile) pair;
+    private static void emptyData(PRegEntry PRegEntry) {
+        if (PRegEntry instanceof PRegFile) {
+            PRegFile pairFile = (PRegFile) PRegEntry;
             pairFile.emptyData();
         }
     }
@@ -241,7 +240,7 @@ public final class PReg implements Serializable {
         initialized = false;
     }
 
-    private PairFolder goToFolder(String path, Folder at) {
+    private PRegFolder goToFolder(String path, Folder at) {
 
         String relative = getRelativePath(path, at);
         if (relative.equals("")) {
@@ -249,7 +248,7 @@ public final class PReg implements Serializable {
         }
 
         String[] pathParts = relative.split("/");
-        PairFolder atFolder = root;
+        PRegFolder atFolder = root;
         for (String next : pathParts) {
             atFolder = atFolder.goToFolder(next);
         }
@@ -280,7 +279,7 @@ public final class PReg implements Serializable {
         currentlyIndexing = false;
     }
 
-    private void integrityCheck(PairFolder pairFolder, File sharedFolder, File protFolder) throws ProtException {
+    private void integrityCheck(PRegFolder pairFolder, File sharedFolder, File protFolder) throws ProtException {
         if (pairFolder == null)
             return;
 
@@ -307,14 +306,14 @@ public final class PReg implements Serializable {
 
 
         // checking sub-files and sub-folders with reg pairs (= already existed in the registry before checking)
-        for (PairFile f : pairFolder.getSubFiles()) {
+        for (PRegFile f : pairFolder.getSubFiles()) {
             File sharedFile = sharedMap.get(f.encodedName());
             File protFile = protMap.get(f.realName());
             evaluate(f, sharedFile, protFile);
             filesAtShared.remove(sharedFile);
             filesAtProt.remove(protFile);
         }
-        for (PairFolder f : pairFolder.getSubFolders()) {
+        for (PRegFolder f : pairFolder.getSubFolders()) {
             File sharedFile = sharedMap.get(f.encodedName());
             File protFile = protMap.get(f.realName());
             integrityCheck(f, sharedFile, protFile);
@@ -330,10 +329,10 @@ public final class PReg implements Serializable {
             try {
                 String realName = convertEncodedNameToRealName(sharedFile.getName());
                 File protFile = protMap.get(realName);
-                Pair newPair = evaluate(null, sharedFile, protFile);
+                PRegEntry newPRegEntry = evaluate(null, sharedFile, protFile);
                 if (sharedFile.isDirectory()) {
                     // iterate this folder with the pair that was just created
-                    integrityCheck((PairFolder) newPair, sharedFile, protFile);
+                    integrityCheck((PRegFolder) newPRegEntry, sharedFile, protFile);
                 }
 
             } catch (GeneralSecurityException ex) {
@@ -345,10 +344,10 @@ public final class PReg implements Serializable {
             try {
                 String encodedName = convertRealNameToEncodedName(protFile.getName());
                 File sharedFile = sharedMap.get(encodedName);
-                Pair newPair = evaluate(null, sharedFile, protFile);
+                PRegEntry newPRegEntry = evaluate(null, sharedFile, protFile);
                 if (protFile.isDirectory()) {
                     // iterate this folder with the pair that was just created
-                    integrityCheck((PairFolder) newPair, sharedFile, protFile);
+                    integrityCheck((PRegFolder) newPRegEntry, sharedFile, protFile);
                 }
 
             } catch (GeneralSecurityException ex) {
@@ -357,9 +356,9 @@ public final class PReg implements Serializable {
         }
     }
 
-    private Pair evaluate(Pair pair, File sharedFile, File protFile) throws ProtException {
+    private PRegEntry evaluate(PRegEntry PRegEntry, File sharedFile, File protFile) throws ProtException {
         try {
-            if (pair == null) {
+            if (PRegEntry == null) {
                 // is a file or folder that is not represented by a Pair on this PReg
 
                 if (sharedFile == null && protFile != null) {
@@ -376,13 +375,13 @@ public final class PReg implements Serializable {
                     return add(sharedFile, Folder.SHARED);
                 }
 
-            } else if (pair instanceof PairFile) {
+            } else if (PRegEntry instanceof PRegFile) {
                 // is a file that is already represented by a Pair on this PReg
 
-                PairFile pair0 = (PairFile) pair;
-                if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists()) && !pair.hidden) {
+                PRegFile pair0 = (PRegFile) PRegEntry;
+                if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists()) && !PRegEntry.hidden) {
                     // pair was hidden from both folders, data cannot be obtained -> delete it from registry
-                    permanentDelete(pair);
+                    permanentDelete(PRegEntry);
 
                 } else if ((sharedFile == null || !sharedFile.exists()) && protFile != null) {
                     // file was deleted from shared folder
@@ -391,7 +390,7 @@ public final class PReg implements Serializable {
 
                     if (protLS.compareTo(pairLS) < 0) {
                         // prot file is more recent than pair -> sync prot file to shared folder
-                        Sync.toShared(this, pair);
+                        Sync.toShared(this, PRegEntry);
 
                     } else {
                         // prot file is older than pair -> delete it while retaining data
@@ -406,7 +405,7 @@ public final class PReg implements Serializable {
 
                     if (sharedLS.compareTo(pairLS) < 0) {
                         // shared file is more recent than pair -> sync shared file to prot folder
-                        Sync.toProt(this, pair);
+                        Sync.toProt(this, PRegEntry);
 
                     } else {
                         // shared file is older than pair -> delete it while retaining data
@@ -431,32 +430,32 @@ public final class PReg implements Serializable {
 
                         if (compareProtPair == 0 && compareSharedPair != 0) {
                             // shared file was updated -> sync shared to prot
-                            Sync.toProt(this, pair);
+                            Sync.toProt(this, PRegEntry);
 
                         } else if (compareProtPair != 0 && compareSharedPair == 0) {
                             // prot file was updated -> sync prot to shared
-                            Sync.toShared(this, pair);
+                            Sync.toShared(this, PRegEntry);
 
                         } else if (compareProtPair != 0 && compareSharedPair != 0) {
                             // both files were updated -> conflict
                             addConflicted(protFile, Folder.PROT);
-                            Sync.toProt(this, pair);
+                            Sync.toProt(this, PRegEntry);
                         }
                     }
                 }
-            } else if (pair instanceof PairFolder) {
+            } else if (PRegEntry instanceof PRegFolder) {
                 // is a folder that is already represented by a Pair on this PReg
-                if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists()) && !pair.hidden) {
+                if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists()) && !PRegEntry.hidden) {
                     // pair was deleted from both folders, data cannot be obtained -> delete it from registry
-                    permanentDelete(pair);
+                    permanentDelete(PRegEntry);
 
                 } else if ((sharedFile == null || !sharedFile.exists()) && protFile != null) {
                     // pair was deleted at shared folder
-                    hidePair(pair);
+                    hidePair(PRegEntry);
 
                 } else if (sharedFile != null) {
                     // pair was deleted at prot folder or was not hidden at all -> assure that it is updated to shared folder
-                    Sync.toProt(this, pair);
+                    Sync.toProt(this, PRegEntry);
 
                 }
             }
@@ -465,13 +464,13 @@ public final class PReg implements Serializable {
             // This catch is here only to avoid crashing due to non-existent / null files
             ex.printStackTrace();
         }
-        return pair;
+        return PRegEntry;
     }
 
 
     // -- ADD METHODS --
 
-    public Pair add(File file, Folder fileFrom) throws ProtException {
+    public PRegEntry add(File file, Folder fileFrom) throws ProtException {
         if (Constants.verbose) {
             logger.info("Adding " + file.getAbsolutePath());
         }
@@ -479,7 +478,7 @@ public final class PReg implements Serializable {
     }
 
 
-    public Pair addConflicted(File file, Folder fileFrom) throws ProtException {
+    public PRegEntry addConflicted(File file, Folder fileFrom) throws ProtException {
         if (Constants.verbose) {
             logger.info("Adding conflicted copy " + file.getAbsolutePath());
         }
@@ -487,26 +486,26 @@ public final class PReg implements Serializable {
     }
 
 
-    private Pair addAux(File file, boolean conflicted, Folder fileFrom) throws ProtException {
-        Pair newPair = null;
+    private PRegEntry addAux(File file, boolean conflicted, Folder fileFrom) throws ProtException {
+        PRegEntry newPRegEntry = null;
         if (fileFrom.equals(Folder.PROT)) {
-            newPair = addOnlyToPRegFromProt(file, conflicted);
+            newPRegEntry = addOnlyToPRegFromProt(file, conflicted);
         } else if (fileFrom.equals(Folder.SHARED)) {
-            newPair = addOnlyToPRegFromShared(file, conflicted);
+            newPRegEntry = addOnlyToPRegFromShared(file, conflicted);
         }
 
-        if (newPair != null) {
+        if (newPRegEntry != null) {
             if (fileFrom.equals(Folder.PROT)) {
-                Sync.toShared(this, newPair);
+                Sync.toShared(this, newPRegEntry);
             } else if (fileFrom.equals(Folder.SHARED)) {
-                Sync.toProt(this, newPair);
+                Sync.toProt(this, newPRegEntry);
             }
         }
-        return newPair;
+        return newPRegEntry;
     }
 
 
-    private Pair addOnlyToPRegFromProt(File file, boolean conflicted) throws ProtException {
+    private PRegEntry addOnlyToPRegFromProt(File file, boolean conflicted) throws ProtException {
         try {
             String realName = file.getName();
             if (conflicted && !file.isDirectory()) {
@@ -526,7 +525,7 @@ public final class PReg implements Serializable {
 
 
             String parentPath = file.getParentFile().getAbsolutePath();
-            PairFolder parent = null;
+            PRegFolder parent = null;
             if (!parentPath.equalsIgnoreCase(PROT_PATH))
                 parent = goToFolder(parentPath, Folder.PROT);
 
@@ -540,7 +539,7 @@ public final class PReg implements Serializable {
     }
 
 
-    private Pair addOnlyToPRegFromShared(File file, boolean conflicted) throws ProtException {
+    private PRegEntry addOnlyToPRegFromShared(File file, boolean conflicted) throws ProtException {
         try {
             String encodedName = file.getName();
             String realName = convertEncodedNameToRealName(encodedName);
@@ -560,7 +559,7 @@ public final class PReg implements Serializable {
             }
 
             String parentPath = file.getParentFile().getAbsolutePath();
-            PairFolder parent = null;
+            PRegFolder parent = null;
             if (!parentPath.equalsIgnoreCase(SHARED_PATH))
                 parent = goToFolder(parentPath, Folder.SHARED);
 
@@ -574,14 +573,14 @@ public final class PReg implements Serializable {
     }
 
 
-    private Pair addFinal(File file, PairFolder parent, String realName, String encodedName, Folder fromFolder) throws ProtException, IOException, GeneralSecurityException {
-        Pair pairToReturn;
+    private PRegEntry addFinal(File file, PRegFolder parent, String realName, String encodedName, Folder fromFolder) throws ProtException, IOException, GeneralSecurityException {
+        PRegEntry PRegEntryToReturn;
 
         if (file.isDirectory()) {
             // checks if a hidden PairFolder that represents the files already exists
-            PairFolder pair = parent.getSubFolders()
+            PRegFolder pair = parent.getSubFolders()
                     .stream()
-                    .filter(Pair::isHidden)
+                    .filter(PRegEntry::isHidden)
                     .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
                     .findFirst()
                     .get();
@@ -592,18 +591,18 @@ public final class PReg implements Serializable {
 
             } else {
                 // needs to create a new PairFolder
-                pair = new PairFolder(parent, encodedName, realName);
+                pair = new PRegFolder(parent, encodedName, realName);
                 parent.addFolder(pair);
 
             }
 
-            pairToReturn = pair;
+            PRegEntryToReturn = pair;
 
         } else {
             // checks if a hidden PairFile that represents the files already exists
-            PairFile pair = parent.getSubFiles()
+            PRegFile pair = parent.getSubFiles()
                     .stream()
-                    .filter(Pair::isHidden)
+                    .filter(PRegEntry::isHidden)
                     .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
                     .findFirst()
                     .get();
@@ -622,15 +621,15 @@ public final class PReg implements Serializable {
 
             } else {
                 // needs to create a new PairFolder
-                pair = new PairFile(parent, encodedName, realName, new Date(file.lastModified()), file.length());
+                pair = new PRegFile(parent, encodedName, realName, new Date(file.lastModified()), file.length());
                 parent.addFile(pair);
 
             }
 
-            pairToReturn = pair;
+            PRegEntryToReturn = pair;
         }
 
-        return pairToReturn;
+        return PRegEntryToReturn;
     }
 
 
@@ -679,17 +678,17 @@ public final class PReg implements Serializable {
 
     // -- DELETE METHODS --
 
-    public void permanentDelete(Pair pair) {
-        pair.parentFolder().remove(pair);
-        emptyData(pair);
+    public void permanentDelete(PRegEntry PRegEntry) {
+        PRegEntry.parentFolder().remove(PRegEntry);
+        emptyData(PRegEntry);
     }
 
 
     public void delete(Path filePath, Folder fromFolder) throws ProtException {
         if (Constants.verbose) logger.info("Deleting file " + filePath);
 
-        PairFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
-        Pair toDelete;
+        PRegFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
+        PRegEntry toDelete;
         toDelete = parent.goToFile(filePath.getFileName().toString());
         if (toDelete == null) {
             toDelete = parent.goToFolder(filePath.getFileName().toString());
@@ -701,32 +700,32 @@ public final class PReg implements Serializable {
     /**
      * Hides the file or folder, keeping it in the registry but deleting it from both PROT and SHARED folders.
      */
-    private void hidePair(Pair pair) {
-        if (pair.isHidden()) {
+    private void hidePair(PRegEntry PRegEntry) {
+        if (PRegEntry.isHidden()) {
             return;
         }
 
-        if (pair instanceof PairFolder) {
-            PairFolder pairFolder = (PairFolder) pair;
+        if (PRegEntry instanceof PRegFolder) {
+            PRegFolder pairFolder = (PRegFolder) PRegEntry;
             pairFolder.getSubFolders().forEach(this::hidePair);
             pairFolder.getSubFiles().forEach(this::hidePair);
         }
 
         try {
-            File fileAtProt = new File(PROT_PATH + File.separator + pair.relativeRealPath());
+            File fileAtProt = new File(PROT_PATH + File.separator + PRegEntry.relativeRealPath());
             if (fileAtProt.exists()) {
-                if (pair instanceof PairFile) {
-                    ((PairFile) pair).setData(FileUtils.readFileToByteArray(fileAtProt));
+                if (PRegEntry instanceof PRegFile) {
+                    ((PRegFile) PRegEntry).setData(FileUtils.readFileToByteArray(fileAtProt));
                 }
                 SKIP_WATCHER_ENTRIES.add(fileAtProt.getAbsolutePath());
                 SKIP_WATCHER_ENTRIES.add(fileAtProt.getParentFile().getAbsolutePath());
                 Constants.delete(fileAtProt);
             }
 
-            File fileAtShared = new File(SHARED_PATH + File.separator + pair.relativeEncodedPath());
+            File fileAtShared = new File(SHARED_PATH + File.separator + PRegEntry.relativeEncodedPath());
             if (fileAtShared.exists()) {
-                if (pair instanceof PairFile) {
-                    ((PairFile) pair).setData(decrypt(FileUtils.readFileToByteArray(fileAtShared)));
+                if (PRegEntry instanceof PRegFile) {
+                    ((PRegFile) PRegEntry).setData(decrypt(FileUtils.readFileToByteArray(fileAtShared)));
                 }
                 SKIP_WATCHER_ENTRIES.add(fileAtShared.getAbsolutePath());
                 SKIP_WATCHER_ENTRIES.add(fileAtShared.getParentFile().getAbsolutePath());
@@ -735,55 +734,55 @@ public final class PReg implements Serializable {
 
         } catch (IOException | GeneralSecurityException ex) {
             if (Constants.verbose) {
-                logger.error("Error while hiding PReg pair " + pair.toString(), ex);
+                logger.error("Error while hiding PReg pair " + PRegEntry.toString(), ex);
             }
         }
 
-        pair.hidden = true;
+        PRegEntry.hidden = true;
     }
 
 
     /**
      * Shows the file or folder, reversing the delete project on both PROT and SHARED folders.
      */
-    public void showPair(Pair pair) {
-        if (!pair.isHidden()) {
+    public void showPair(PRegEntry PRegEntry) {
+        if (!PRegEntry.isHidden()) {
             return;
         }
 
-        if (pair.parentFolder().isHidden()) {
-            showPair(pair.parentFolder());
+        if (PRegEntry.parentFolder().isHidden()) {
+            showPair(PRegEntry.parentFolder());
         }
 
-        pair.hidden = false;
-        File fileAtProt = new File(PROT_PATH + File.separator + pair.relativeRealPath());
+        PRegEntry.hidden = false;
+        File fileAtProt = new File(PROT_PATH + File.separator + PRegEntry.relativeRealPath());
         SKIP_WATCHER_ENTRIES.add(fileAtProt.getAbsolutePath());
 
         try {
 
-            if (pair instanceof PairFile) {
-                PairFile pbxFile = (PairFile) pair;
+            if (PRegEntry instanceof PRegFile) {
+                PRegFile pbxFile = (PRegFile) PRegEntry;
                 pbxFile.setLastModified(new Date(fileAtProt.lastModified()));
                 FileUtils.writeByteArrayToFile(fileAtProt, pbxFile.getData());
                 TrayApplet.getInstance().baloon("File Restored",
-                        "The hidden file \"" + pair.realName() + "\" was restored to its original location.",
+                        "The hidden file \"" + PRegEntry.realName() + "\" was restored to its original location.",
                         TrayIcon.MessageType.INFO);
-                emptyData(pair);
+                emptyData(PRegEntry);
 
-            } else if (pair instanceof PairFolder) {
+            } else if (PRegEntry instanceof PRegFolder) {
                 fileAtProt.mkdir();
                 TrayApplet.getInstance().baloon("Folder Restored",
-                        "The hidden folder \"" + pair.realName() + "\" was restored to its original location.",
+                        "The hidden folder \"" + PRegEntry.realName() + "\" was restored to its original location.",
                         TrayIcon.MessageType.INFO);
             }
 
-            Sync.toShared(this, pair);
+            Sync.toShared(this, PRegEntry);
 
         } catch (IOException ex) {
             if (Constants.verbose) {
-                logger.error("Error while showing PReg pair " + pair.toString(), ex);
+                logger.error("Error while showing PReg pair " + PRegEntry.toString(), ex);
             }
-            pair.hidden = true;
+            PRegEntry.hidden = true;
             SKIP_WATCHER_ENTRIES.remove(fileAtProt.getAbsolutePath());
         }
     }
@@ -796,7 +795,7 @@ public final class PReg implements Serializable {
     }
 
 
-    private boolean build(final DefaultMutableTreeNode treeRoot, final PairFolder root) {
+    private boolean build(final DefaultMutableTreeNode treeRoot, final PRegFolder root) {
         final Ref.Single<Boolean> deletedFileWasAdded = Ref.of1(false);
 
         root.getSubFolders().forEach(f -> {
@@ -894,7 +893,7 @@ public final class PReg implements Serializable {
 
             // 1) remove entries from the syncing threads
             protFolderWatcher.interrupt();
-            Ref.Duo<List<Pair>> removedEntries = Sync.removeSyncPairsForReg(this);
+            Ref.Duo<List<PRegEntry>> removedEntries = Sync.removeSyncPairsForReg(this);
 
 
             // 2) set new path
@@ -914,10 +913,10 @@ public final class PReg implements Serializable {
 
 
             // 5) add removed entries to the syncing threads again
-            for (Pair e : removedEntries.first)
+            for (PRegEntry e : removedEntries.first)
                 Sync.toProt(this, e);
 
-            for (Pair e : removedEntries.second)
+            for (PRegEntry e : removedEntries.second)
                 Sync.toShared(this, e);
 
 
@@ -977,9 +976,9 @@ public final class PReg implements Serializable {
         return print(sb, root, indent, indent).toString();
     }
 
-    private StringBuffer print(StringBuffer sb, PairFolder root, String originalIndent, String indent) {
+    private StringBuffer print(StringBuffer sb, PRegFolder root, String originalIndent, String indent) {
 
-        for (PairFile f : root.getSubFiles()) {
+        for (PRegFile f : root.getSubFiles()) {
             sb.append(indent);
             sb.append(f.realName());
             sb.append(" (file");
@@ -993,7 +992,7 @@ public final class PReg implements Serializable {
             }
         }
 
-        for (PairFolder f : root.getSubFolders()) {
+        for (PRegFolder f : root.getSubFolders()) {
             if (f.parentFolder() != null) {
                 sb.append(indent);
                 sb.append(f.realName());

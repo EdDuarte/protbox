@@ -10,7 +10,7 @@ import java.awt.event.ActionListener;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
+ * @version 2.0
  */
 public class WaitingForResponseWindow extends JFrame {
 

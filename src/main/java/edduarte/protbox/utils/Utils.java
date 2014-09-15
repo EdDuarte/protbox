@@ -11,11 +11,10 @@ import java.security.MessageDigest;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
+ * @version 2.0
  */
 public final class Utils {
 
@@ -25,7 +24,6 @@ public final class Utils {
 
     private static final String SERIAL_ERROR_MESSAGE = "Could not obtain the current machine's serial number.";
 
-    private static final AtomicInteger sNextGeneratedId = new AtomicInteger(1);
     private static MessageDigest md;
     private static final Random random = new Random();
 
@@ -160,19 +158,6 @@ public final class Utils {
         random.nextBytes(bytes);
         return ByteBuffer.wrap(bytes).getInt();
     }
-
-
-//    public static int generateUniqueId() {
-//        for (;;) {
-//            final int result = sNextGeneratedId.get();
-//            // aapt-generated IDs have the high byte nonzero; clamp to the range under that.
-//            int newValue = result + 1;
-//            if (newValue > 0x0FFFFFF) newValue = 1; // Roll over to 1, not 0.
-//            if (sNextGeneratedId.compareAndSet(result, newValue)) {
-//                return result;
-//            }
-//        }
-//    }
 
 
     /**
