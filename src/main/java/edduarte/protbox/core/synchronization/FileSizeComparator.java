@@ -1,8 +1,8 @@
 package edduarte.protbox.core.synchronization;
 
-import edduarte.protbox.core.registry.PRegEntry;
-import edduarte.protbox.core.registry.PRegFile;
-import edduarte.protbox.core.registry.PRegFolder;
+import edduarte.protbox.core.registry.ProtboxEntry;
+import edduarte.protbox.core.registry.ProtboxFile;
+import edduarte.protbox.core.registry.ProtboxFolder;
 
 import java.util.Comparator;
 
@@ -13,21 +13,21 @@ import java.util.Comparator;
 final class FileSizeComparator implements Comparator<SyncEntry> {
 
     public int compare(SyncEntry sEntry1, SyncEntry sEntry2) {
-        PRegEntry entry1 = sEntry1.PRegEntry;
-        PRegEntry entry2 = sEntry2.PRegEntry;
+        ProtboxEntry entry1 = sEntry1.entry;
+        ProtboxEntry entry2 = sEntry2.entry;
 
-        if (entry1 instanceof PRegFolder && entry2 instanceof PRegFile) {
+        if (entry1 instanceof ProtboxFolder && entry2 instanceof ProtboxFile) {
             return -1;
 
-        } else if (entry1 instanceof PRegFile && entry2 instanceof PRegFolder) {
+        } else if (entry1 instanceof ProtboxFile && entry2 instanceof ProtboxFolder) {
             return 1;
 
-        } else if (entry1 instanceof PRegFolder && entry2 instanceof PRegFolder) {
+        } else if (entry1 instanceof ProtboxFolder && entry2 instanceof ProtboxFolder) {
             return 0;
 
-        } else if (entry1 instanceof PRegFile && entry2 instanceof PRegFile) {
-            long file1Size = ((PRegFile) entry1).getFileSize();
-            long file2Size = ((PRegFile) entry2).getFileSize();
+        } else if (entry1 instanceof ProtboxFile && entry2 instanceof ProtboxFile) {
+            long file1Size = ((ProtboxFile) entry1).getFileSize();
+            long file2Size = ((ProtboxFile) entry2).getFileSize();
             if (file1Size < file2Size) {
                 return -1;
 

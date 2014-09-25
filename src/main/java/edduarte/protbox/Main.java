@@ -1,16 +1,16 @@
 package edduarte.protbox;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.User;
-import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.ProtboxUser;
+import edduarte.protbox.core.registry.ProtboxRegistry;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.panels.PairPanel;
-import edduarte.protbox.ui.window.eIDTokenLoadingWindow;
-import edduarte.protbox.ui.window.InsertPasswordWindow;
-import edduarte.protbox.ui.window.NewRegistryWindow;
-import edduarte.protbox.ui.window.ProviderListWindow;
+import edduarte.protbox.ui.windows.eIDTokenLoadingWindow;
+import edduarte.protbox.ui.windows.InsertPasswordWindow;
+import edduarte.protbox.ui.windows.NewRegistryWindow;
+import edduarte.protbox.ui.windows.ProviderListWindow;
 import edduarte.protbox.utils.Callback;
 import edduarte.protbox.utils.Ref;
 import ij.io.DirectoryChooser;
@@ -39,7 +39,7 @@ public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     public static final Map<String, String> pkcs11Providers = new HashMap<>();
 
-    private static User user;
+    private static ProtboxUser user;
     private static CertificateData certificateData;
     private static TrayApplet trayApplet;
     private static SystemTray tray;
@@ -231,14 +231,14 @@ public class Main {
 
             try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(pair.pollSecond()))) {
 
-                PReg reg = (PReg) stream.readObject();
-                if (reg.user.equals(user)) {
+                ProtboxRegistry reg = (ProtboxRegistry) stream.readObject();
+                if (reg.getUser().equals(user)) {
 
-                    if (!new File(reg.SHARED_PATH).exists()) {
+                    if (!reg.getPair().getSharedFolderFile().exists()) {
 
                         // shared folder from registry was deleted
                         JOptionPane.showMessageDialog(
-                                null, "The shared folder at " + reg.SHARED_PATH + "\n" +
+                                null, "The shared folder at " + reg.getPair().getSharedFolderPath() + "\n" +
                                         "was either deleted, moved or renamed while Protbox wasn't running!\n" +
                                         "Unfortunately this means that this registry will be deleted and you\n" +
                                         "will need to ask for permission again, requiring your Citizen Card.\n" +
@@ -248,7 +248,7 @@ public class Main {
                         reg.stop();
                         Constants.delete(serialized);
 
-                    } else if (!new File(reg.PROT_PATH).exists()) {
+                    } else if (!reg.getPair().getProtFolderFile().exists()) {
                         changeProtPath(reg, serialized);
 
                     } else {
@@ -287,7 +287,7 @@ public class Main {
             Cipher cipher = Cipher.getInstance("AES");
             for (Component c : trayApplet.instanceList.getComponents()) {
                 if (c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")) {
-                    PReg toSerialize = ((PairPanel) c).getRegistry();
+                    ProtboxRegistry toSerialize = ((PairPanel) c).getRegistry();
 
                     // stops the registry, which stops the running threads and processes
                     toSerialize.stop();
@@ -319,7 +319,7 @@ public class Main {
     }
 
 
-    private static void changeProtPath(PReg reg, File serializedDirectory) throws ProtException {
+    private static void changeProtPath(ProtboxRegistry reg, File serializedDirectory) throws ProtException {
 
         if (JOptionPane.showConfirmDialog(
                 null, "The prot folder from one of your registries\n" +
@@ -355,7 +355,7 @@ public class Main {
     }
 
 
-    public static User getUser() {
+    public static ProtboxUser getUser() {
         return user;
     }
 

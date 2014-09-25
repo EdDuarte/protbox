@@ -1,9 +1,9 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.registry.ProtboxRegistry;
 import edduarte.protbox.exception.ProtException;
-import edduarte.protbox.ui.FolderValidation;
+import edduarte.protbox.core.FolderValidation;
 import edduarte.protbox.Main;
 import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.ui.TrayApplet;
@@ -32,13 +32,13 @@ import java.util.Map;
 public class ConfigurationWindow extends JDialog {
     private transient static org.slf4j.Logger logger = LoggerFactory.getLogger(ConfigurationWindow.class);
 
-    private static final Map<PReg, ConfigurationWindow> instances = new HashMap<>();
+    private static final Map<ProtboxRegistry, ConfigurationWindow> instances = new HashMap<>();
 
-    private PReg reg;
+    private ProtboxRegistry reg;
     private JTextField path;
     private JLabel ok;
 
-    private ConfigurationWindow(final PReg reg, final PairPanel instanceCell) {
+    private ConfigurationWindow(final ProtboxRegistry reg, final PairPanel instanceCell) {
         super();
         this.reg = reg;
         setLayout(null);
@@ -54,7 +54,7 @@ public class ConfigurationWindow extends JDialog {
         JLabel label2 = new JLabel("Prot folder: ");
         label2.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
         label2.setBounds(20, 50, 100, 30);
-        path = new JTextField(reg.PROT_PATH + "\\");
+        path = new JTextField(reg.getPair().getProtFolderPath() + "\\");
         PromptSupport.setPrompt("<none selected>", path);
         path.setMargin(new Insets(0, 10, 0, 10));
         path.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
@@ -100,7 +100,7 @@ public class ConfigurationWindow extends JDialog {
                         "Delete prot folder",
                         JOptionPane.YES_NO_OPTION,
                         JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
-                    Constants.delete(new File(reg.PROT_PATH)); // delete prot folder
+                    Constants.delete(reg.getPair().getProtFolderFile()); // delete prot folder
                 }
 
                 TrayApplet.getInstance().instanceList.remove(instanceCell);
@@ -121,9 +121,10 @@ public class ConfigurationWindow extends JDialog {
         ok.addMouseListener((OnMouseClick) e -> {
             if (ok.isEnabled()) {
                 try {
-                    if (!reg.PROT_PATH.equalsIgnoreCase(path.getText())) {
+                    String protPath = reg.getPair().getProtFolderPath();
+                    if (!protPath.equalsIgnoreCase(path.getText())) {
                         Path newPath = Paths.get(path.getText());
-                        Path oldPath = Paths.get(reg.PROT_PATH);
+                        Path oldPath = Paths.get(protPath);
                         if (newPath.startsWith(oldPath) || oldPath.startsWith(newPath)) {
                             JOptionPane.showMessageDialog(
                                     ConfigurationWindow.this, "The new configured path contains or is contained in the older path!\n" +
@@ -134,7 +135,8 @@ public class ConfigurationWindow extends JDialog {
                             return;
                         }
 
-                        int resultCode = FolderValidation.validate(this, newPath, Paths.get(reg.SHARED_PATH), false);
+                        Path sharedPath = reg.getPair().getSharedFolderFile().toPath();
+                        int resultCode = FolderValidation.validate(this, newPath, sharedPath, false);
                         if (resultCode == FolderValidation.RESULT_CODE_INVALID) {
                             return;
                         }
@@ -168,13 +170,13 @@ public class ConfigurationWindow extends JDialog {
     }
 
     public static void closeAllInstances() {
-        for (PReg d : instances.keySet()) {
+        for (ProtboxRegistry d : instances.keySet()) {
             instances.get(d).dispose();
         }
         instances.clear();
     }
 
-    public static ConfigurationWindow getInstance(final PReg directory, final PairPanel instanceCell) {
+    public static ConfigurationWindow getInstance(final ProtboxRegistry directory, final PairPanel instanceCell) {
         ConfigurationWindow newInstance = instances.get(directory);
         if (newInstance == null) {
             newInstance = new ConfigurationWindow(directory, instanceCell);
@@ -186,8 +188,9 @@ public class ConfigurationWindow extends JDialog {
     }
 
     private void check() {
-        if ((!path.getText().equalsIgnoreCase(reg.PROT_PATH) &&
-                !path.getText().equalsIgnoreCase(reg.PROT_PATH + "\\"))
+        String protPath = reg.getPair().getProtFolderPath();
+        if ((!path.getText().equalsIgnoreCase(protPath) &&
+                !path.getText().equalsIgnoreCase(protPath + "\\"))
 //                || (!combo.getSelectedItem().toString().equals("---") &&
 //                        !combo.getSelectedItem().toString().equals(registry.getAlgorithm()))
                 ) {

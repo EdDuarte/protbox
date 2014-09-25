@@ -6,16 +6,16 @@ import java.io.Serializable;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public class PRegEntry implements Serializable {
+public class ProtboxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final PRegFolder parentFolder;
+    private final ProtboxFolder parentFolder;
     private final String encodedName;
     private final String realName;
     boolean hidden;
     
     
-    PRegEntry(final PRegFolder parentFolder, final String encodedName, final String realName) {
+    ProtboxEntry(final ProtboxFolder parentFolder, final String encodedName, final String realName) {
         this.parentFolder = parentFolder;
         this.encodedName = encodedName;
         this.realName = realName;
@@ -25,7 +25,7 @@ public class PRegEntry implements Serializable {
     /**
      * The parentFolder is a Folder Entry(PbxFolder).
      */
-    public PRegFolder parentFolder() {
+    public ProtboxFolder parentFolder() {
         return parentFolder;
     }
 
@@ -95,8 +95,8 @@ public class PRegEntry implements Serializable {
             return true;
         }
 
-        if (obj instanceof PRegEntry) {
-            PRegEntry pe = (PRegEntry) obj;
+        if (obj instanceof ProtboxEntry) {
+            ProtboxEntry pe = (ProtboxEntry) obj;
             return this.relativeRealPath().equalsIgnoreCase(pe.relativeRealPath()) &&
                    this.relativeEncodedPath().equalsIgnoreCase(pe.relativeEncodedPath());
         }

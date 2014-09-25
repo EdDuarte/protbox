@@ -2,7 +2,7 @@ package edduarte.protbox.core.watcher;
 
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.Folder;
-import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.registry.ProtboxRegistry;
 import edduarte.protbox.exception.ProtException;
 import org.slf4j.LoggerFactory;
 
@@ -16,15 +16,15 @@ import java.util.Collections;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public final class PRegWatcher implements Runnable {
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(PRegWatcher.class);
-    private PReg reg;
+public final class RegistryWatcher implements Runnable {
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(RegistryWatcher.class);
+    private ProtboxRegistry reg;
     private Folder fromFolder;
     private Path root;
     private WatchService watchService = FileSystems.getDefault().newWatchService();
 
 
-    public PRegWatcher(PReg reg, Folder fromFolder, Path root) throws IOException {
+    public RegistryWatcher(ProtboxRegistry reg, Folder fromFolder, Path root) throws IOException {
         this.reg = reg;
         this.fromFolder = fromFolder;
         this.root = root;

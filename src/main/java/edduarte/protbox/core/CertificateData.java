@@ -11,14 +11,26 @@ public class CertificateData implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    public final byte[] encodedPublicKey;
-    public final byte[] signatureBytes;
-    public final PrivateKey exchangePrivateKey;
+    private final byte[] encodedPublicKey;
+    private final byte[] signatureBytes;
+    private final PrivateKey exchangePrivateKey;
 
     public CertificateData(byte[] encodedPublicKey, byte[] signatureBytes, PrivateKey exchangePrivateKey) {
 
         this.encodedPublicKey = encodedPublicKey;
         this.signatureBytes = signatureBytes;
         this.exchangePrivateKey = exchangePrivateKey;
+    }
+
+    public byte[] getEncodedPublicKey() {
+        return encodedPublicKey;
+    }
+
+    public byte[] getSignatureBytes() {
+        return signatureBytes;
+    }
+
+    public PrivateKey getExchangePrivateKey() {
+        return exchangePrivateKey;
     }
 }

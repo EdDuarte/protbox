@@ -1,4 +1,4 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.ui.listeners.OnKeyReleased;

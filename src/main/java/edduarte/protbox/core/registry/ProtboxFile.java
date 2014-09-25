@@ -6,21 +6,21 @@ import java.util.Date;
 
 /**
  * PRegFile is a entry that structures a file in the Registry. Other than having the same
- * variables as {@link PRegEntry}, a PairFile is also represented by an array of bytes that contains
+ * variables as {@link ProtboxEntry}, a PairFile is also represented by an array of bytes that contains
  * the data of the file. This array is only filled when the correspondent file in the native
  * folders are hidden.
  *
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public final class PRegFile extends PRegEntry implements Serializable {
+public final class ProtboxFile extends ProtboxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private byte[] data;
 //    private long fileSize;
     private Date lastModified;
 
-    PRegFile(final PRegFolder parentFolder, final String encodedName, final String realName, final Date lastModified, long fileSize) {
+    ProtboxFile(final ProtboxFolder parentFolder, final String encodedName, final String realName, final Date lastModified, long fileSize) {
         super(parentFolder, encodedName, realName);
         this.lastModified = lastModified;
 //        this.fileSize = fileSize;

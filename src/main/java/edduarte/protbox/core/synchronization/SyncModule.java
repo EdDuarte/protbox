@@ -23,14 +23,14 @@ import java.util.concurrent.PriorityBlockingQueue;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public final class Sync {
-    private static final Logger logger = LoggerFactory.getLogger(Sync.class);
+public final class SyncModule {
+    private static final Logger logger = LoggerFactory.getLogger(SyncModule.class);
 
     private static final Queue<SyncEntry> toProt = new PriorityBlockingQueue<>(10, new FileSizeComparator());
     private static final Queue<SyncEntry> toShared = new PriorityBlockingQueue<>(10, new FileSizeComparator());
     private static Thread t1, t2; // singleton threads
 
-    private Sync() {
+    private SyncModule() {
     }
 
     public static void start() {
@@ -65,31 +65,31 @@ public final class Sync {
     }
 
 
-    public static void toProt(final PReg reg, final PRegEntry newPRegEntry) {
+    public static void toProt(final ProtboxRegistry reg, final ProtboxEntry newEntry) {
         // check if toShared queue has the same corresponding pair (incoming conflict synchronization)
-        if (!findConflict(reg, newPRegEntry, toShared))
-            toProt.add(new SyncEntry(reg, newPRegEntry));
+        if (!findConflict(reg, newEntry, toShared))
+            toProt.add(new SyncEntry(reg, newEntry));
     }
 
 
-    public static void toShared(final PReg directory, final PRegEntry newPRegEntry) {
+    public static void toShared(final ProtboxRegistry directory, final ProtboxEntry newEntry) {
         // check if toProt queue has the same corresponding pair (incoming conflict synchronization)
-        if (!findConflict(directory, newPRegEntry, toProt))
-            toShared.add(new SyncEntry(directory, newPRegEntry));
+        if (!findConflict(directory, newEntry, toProt))
+            toShared.add(new SyncEntry(directory, newEntry));
     }
 
 
-    private static boolean findConflict(final PReg reg, final PRegEntry newPRegEntry, Queue<SyncEntry> queueToCheck) {
+    private static boolean findConflict(final ProtboxRegistry reg, final ProtboxEntry newEntry, Queue<SyncEntry> queueToCheck) {
         for (SyncEntry e : queueToCheck) {
-            if (e.PRegEntry.equals(newPRegEntry)) {
+            if (e.entry.equals(newEntry)) {
                 try {
 
                     // removes it from that queue
                     queueToCheck.remove(e);
-                    File protFile = new File(reg.PROT_PATH + File.separator + newPRegEntry.relativeRealPath());
+                    File protFile = new File(reg.getPair().getProtFolderPath() + File.separator + newEntry.relativeRealPath());
 
                     reg.addConflicted(protFile, Folder.PROT);
-                    Sync.toProt(reg, newPRegEntry);
+                    SyncModule.toProt(reg, newEntry);
 
                     return true;
 
@@ -105,21 +105,21 @@ public final class Sync {
     }
 
 
-    public static Ref.Duo<List<PRegEntry>> removeSyncPairsForReg(final PReg reg) {
-        List<PRegEntry> toProtRemoved = new ArrayList<>();
-        List<PRegEntry> toSharedRemoved = new ArrayList<>();
+    public static Ref.Duo<List<ProtboxEntry>> removeSyncPairsForReg(final ProtboxRegistry reg) {
+        List<ProtboxEntry> toProtRemoved = new ArrayList<>();
+        List<ProtboxEntry> toSharedRemoved = new ArrayList<>();
 
         toProt.stream()
                 .filter(e -> e.reg.equals(reg))
                 .forEach(e -> {
-                    toProtRemoved.add(e.PRegEntry);
+                    toProtRemoved.add(e.entry);
                     toProt.remove(e);
                 });
 
         toShared.stream()
                 .filter(e -> e.reg.equals(reg))
                 .forEach(e -> {
-                    toSharedRemoved.add(e.PRegEntry);
+                    toSharedRemoved.add(e.entry);
                     toShared.remove(e);
                 });
 
@@ -131,7 +131,7 @@ public final class Sync {
     }
 
 
-    private static void writeAonB(final PReg directory, final PRegFile entry, final Folder folderOfA, final File a, final File b) {
+    private static void writeAonB(final ProtboxRegistry directory, final ProtboxFile entry, final Folder folderOfA, final File a, final File b) {
         new Thread() {
             @Override
             public void run() {
@@ -171,16 +171,16 @@ public final class Sync {
 
                 while (!toProt.isEmpty()) {
                     SyncEntry polled = toProt.poll();
-                    PReg reg = polled.reg;
-                    PRegEntry PRegEntryToSync = polled.PRegEntry;
+                    ProtboxRegistry reg = polled.reg;
+                    ProtboxEntry entryToSync = polled.entry;
 
-                    File sharedFile = new File(reg.SHARED_PATH + File.separator + PRegEntryToSync.relativeEncodedPath());
-                    File protFile = new File(reg.PROT_PATH + File.separator + PRegEntryToSync.relativeRealPath());
+                    File sharedFile = new File(reg.getPair().getSharedFolderPath() + File.separator + entryToSync.relativeEncodedPath());
+                    File protFile = new File(reg.getPair().getProtFolderPath() + File.separator + entryToSync.relativeRealPath());
 
                     reg.SKIP_WATCHER_ENTRIES.add(protFile.getAbsolutePath());
-                    if (PRegEntryToSync instanceof PRegFile)
-                        writeAonB(reg, ((PRegFile) PRegEntryToSync), Folder.SHARED, sharedFile, protFile);
-                    else if (PRegEntryToSync instanceof PRegFolder) {
+                    if (entryToSync instanceof ProtboxFile)
+                        writeAonB(reg, ((ProtboxFile) entryToSync), Folder.SHARED, sharedFile, protFile);
+                    else if (entryToSync instanceof ProtboxFolder) {
                         protFile.mkdir();
                     }
                 }
@@ -212,16 +212,16 @@ public final class Sync {
 
                 while (!toShared.isEmpty()) {
                     SyncEntry polled = toShared.poll();
-                    PReg reg = polled.reg;
-                    PRegEntry PRegEntryToSync = polled.PRegEntry;
+                    ProtboxRegistry reg = polled.reg;
+                    ProtboxEntry entryToSync = polled.entry;
 
-                    File protFile = new File(reg.PROT_PATH + File.separator + PRegEntryToSync.relativeRealPath());
-                    File sharedFile = new File(reg.SHARED_PATH + File.separator + PRegEntryToSync.relativeEncodedPath());
+                    File protFile = new File(reg.getPair().getProtFolderPath() + File.separator + entryToSync.relativeRealPath());
+                    File sharedFile = new File(reg.getPair().getSharedFolderPath() + File.separator + entryToSync.relativeEncodedPath());
 
                     reg.SKIP_WATCHER_ENTRIES.add(sharedFile.getAbsolutePath());
-                    if (PRegEntryToSync instanceof PRegFile)
-                        writeAonB(reg, ((PRegFile) PRegEntryToSync), Folder.PROT, protFile, sharedFile);
-                    else if (PRegEntryToSync instanceof PRegFolder) {
+                    if (entryToSync instanceof ProtboxFile)
+                        writeAonB(reg, ((ProtboxFile) entryToSync), Folder.PROT, protFile, sharedFile);
+                    else if (entryToSync instanceof ProtboxFolder) {
                         sharedFile.mkdir();
                     }
 

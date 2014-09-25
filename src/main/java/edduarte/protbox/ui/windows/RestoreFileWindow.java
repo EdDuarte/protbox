@@ -1,9 +1,9 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.registry.*;
-import edduarte.protbox.core.registry.PRegEntry;
-import edduarte.protbox.core.registry.PRegFile;
+import edduarte.protbox.core.registry.ProtboxEntry;
+import edduarte.protbox.core.registry.ProtboxFile;
 import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
@@ -32,9 +32,9 @@ import java.util.regex.Pattern;
 public class RestoreFileWindow extends JDialog {
     private static final Logger logger = LoggerFactory.getLogger(RestoreFileWindow.class);
 
-    private static final Map<PReg, RestoreFileWindow> instances = new HashMap<>();
+    private static final Map<ProtboxRegistry, RestoreFileWindow> instances = new HashMap<>();
 
-    private RestoreFileWindow(final PReg registry) {
+    private RestoreFileWindow(final ProtboxRegistry registry) {
         super();
         setLayout(null);
 
@@ -101,7 +101,7 @@ public class RestoreFileWindow extends JDialog {
         permanent.addMouseListener((OnMouseClick) e -> {
             if (permanent.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                PRegEntry entry = (PRegEntry) node.getUserObject();
+                ProtboxEntry entry = (ProtboxEntry) node.getUserObject();
 
                 registry.permanentDelete(entry);
                 dispose();
@@ -119,7 +119,7 @@ public class RestoreFileWindow extends JDialog {
         action.addMouseListener((OnMouseClick) e -> {
             if (action.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                PRegEntry entry = (PRegEntry) node.getUserObject();
+                ProtboxEntry entry = (ProtboxEntry) node.getUserObject();
                 registry.showPair(entry);
                 dispose();
             }
@@ -130,7 +130,7 @@ public class RestoreFileWindow extends JDialog {
         tree.addMouseListener((OnMouseClick) e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null) {
-                PRegEntry entry = (PRegEntry) node.getUserObject();
+                ProtboxEntry entry = (ProtboxEntry) node.getUserObject();
                 if (entry.isHidden()) {
                     permanent.setEnabled(true);
                     action.setEnabled(true);
@@ -175,7 +175,7 @@ public class RestoreFileWindow extends JDialog {
     }
 
 
-    public static RestoreFileWindow getInstance(final PReg registry) {
+    public static RestoreFileWindow getInstance(final ProtboxRegistry registry) {
         RestoreFileWindow newInstance = instances.get(registry);
         if (newInstance == null) {
             newInstance = new RestoreFileWindow(registry);
@@ -219,18 +219,18 @@ public class RestoreFileWindow extends JDialog {
             tree.setRowHeight(32);
 
             // rendering font and ASSETS
-            PRegEntry entry = (PRegEntry) ((DefaultMutableTreeNode) value).getUserObject();
+            ProtboxEntry entry = (ProtboxEntry) ((DefaultMutableTreeNode) value).getUserObject();
             setFont(new Font(Constants.FONT, Font.PLAIN, 13));
 
 
-            if (entry instanceof PRegFile) {
+            if (entry instanceof ProtboxFile) {
                 if (entry.isHidden()) {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of deleted file
                     setForeground(Color.gray);
                 } else {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of normal file
                 }
-            } else if (entry instanceof PRegFolder) {
+            } else if (entry instanceof ProtboxFolder) {
                 if (entry.isHidden()) {
                     setIcon(new ImageIcon(Constants.getAsset("folder.png"))); // image of deleted file
                     setForeground(Color.gray);

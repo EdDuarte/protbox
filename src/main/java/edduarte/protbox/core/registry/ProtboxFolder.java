@@ -5,19 +5,19 @@ import java.util.*;
 
 /**
  * PRegFolder is a entry that structures a folder in the Registry. Other than having the same
- * variables as {@link PRegEntry}, a PairFolder is also represented by a list of other subFolders and a list
+ * variables as {@link ProtboxEntry}, a PairFolder is also represented by a list of other subFolders and a list
  * of other subFiles contained in this folder.
  *
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public final class PRegFolder extends PRegEntry implements Serializable {
+public final class ProtboxFolder extends ProtboxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final Set<PRegFolder> subFolders;
-    private final Set<PRegFile> subFiles;
+    private final Set<ProtboxFolder> subFolders;
+    private final Set<ProtboxFile> subFiles;
 
-    PRegFolder(final PRegFolder parentFolder, final String encodedName, final String realName) {
+    ProtboxFolder(final ProtboxFolder parentFolder, final String encodedName, final String realName) {
         super(parentFolder, encodedName, realName);
         subFolders = new LinkedHashSet<>();
         subFiles = new LinkedHashSet<>();
@@ -27,7 +27,7 @@ public final class PRegFolder extends PRegEntry implements Serializable {
     /**
      * Adds the specified PairFolder as a child of this PairFolder.
      */
-    public PRegFolder addFolder(PRegFolder f) {
+    public ProtboxFolder addFolder(ProtboxFolder f) {
         subFolders.add(f);
         return this;
     }
@@ -36,7 +36,7 @@ public final class PRegFolder extends PRegEntry implements Serializable {
     /**
      * Adds the specified PairFile as a child of this PairFolder.
      */
-    public PRegFolder addFile(PRegFile f) {
+    public ProtboxFolder addFile(ProtboxFile f) {
         subFiles.add(f);
         return this;
     }
@@ -47,7 +47,7 @@ public final class PRegFolder extends PRegEntry implements Serializable {
      *
      * @return a iterable structure of sub-folders that are contained in this PairFolder.
      */
-    Collection<PRegFolder> getSubFolders() {
+    Collection<ProtboxFolder> getSubFolders() {
         return Collections.unmodifiableCollection(subFolders);
     }
 
@@ -57,7 +57,7 @@ public final class PRegFolder extends PRegEntry implements Serializable {
      *
      * @return a iterable structure of sub-files that are contained in this PairFolder.
      */
-    Collection<PRegFile> getSubFiles() {
+    Collection<ProtboxFile> getSubFiles() {
         return Collections.unmodifiableCollection(subFiles);
     }
 
@@ -65,10 +65,10 @@ public final class PRegFolder extends PRegEntry implements Serializable {
     /**
      * Removes the specified PairFile or PairFolder from being a child of this PairFolder.
      */
-    void remove(PRegEntry e) {
-        if (e instanceof PRegFolder)
+    void remove(ProtboxEntry e) {
+        if (e instanceof ProtboxFolder)
             subFolders.remove(e);
-        else if (e instanceof PRegFile)
+        else if (e instanceof ProtboxFile)
             subFiles.remove(e);
     }
 
@@ -79,8 +79,8 @@ public final class PRegFolder extends PRegEntry implements Serializable {
      * @param fileName the real or encoded name of the PairFile to return.
      * @return a sub-file of this PairFolder with the specified real or encoded name.
      */
-    PRegFile goToFile(String fileName) {
-        Optional<PRegFile> value = subFiles.stream()
+    ProtboxFile goToFile(String fileName) {
+        Optional<ProtboxFile> value = subFiles.stream()
                 .filter(f -> f.realName().equalsIgnoreCase(fileName) || f.encodedName().equalsIgnoreCase(fileName))
                 .findFirst();
 
@@ -94,8 +94,8 @@ public final class PRegFolder extends PRegEntry implements Serializable {
      * @param folderName the real or encoded name of the PairFolder to return.
      * @return a sub-folder of this PairFolder with the specified real or encoded name.
      */
-    PRegFolder goToFolder(String folderName) {
-        Optional<PRegFolder> value = subFolders.stream()
+    ProtboxFolder goToFolder(String folderName) {
+        Optional<ProtboxFolder> value = subFolders.stream()
                 .filter(f -> f.realName().equalsIgnoreCase(folderName) || f.encodedName().equalsIgnoreCase(folderName))
                 .findFirst();
 

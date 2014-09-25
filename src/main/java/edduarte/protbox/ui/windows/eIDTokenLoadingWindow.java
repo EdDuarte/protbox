@@ -1,7 +1,7 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.User;
+import edduarte.protbox.core.ProtboxUser;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.Main;
 import edduarte.protbox.ui.listeners.OnMouseClick;
@@ -35,7 +35,7 @@ public class eIDTokenLoadingWindow extends JFrame {
     private ImageIcon loadingIcon = new ImageIcon(new File(Constants.INSTALL_DIR, "vfl3Wt7C").getAbsolutePath());
 
 
-    private eIDTokenLoadingWindow(final String providerName, final Callback<Ref.Double<User, CertificateData>> callback) {
+    private eIDTokenLoadingWindow(final String providerName, final Callback<Ref.Double<ProtboxUser, CertificateData>> callback) {
         super("Validating your Citizen Card - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.setLayout(null);
@@ -88,7 +88,7 @@ public class eIDTokenLoadingWindow extends JFrame {
                     t.cancel();
 
                     setInfoWithLoading();
-                    Ref.Double<User, CertificateData> entry = getCertificateData(alias, ks);
+                    Ref.Double<ProtboxUser, CertificateData> entry = getCertificateData(alias, ks);
 
                     setInfoWithUser(entry.first);
                     Thread.sleep(2000);
@@ -107,7 +107,7 @@ public class eIDTokenLoadingWindow extends JFrame {
     }
 
     public static eIDTokenLoadingWindow showPrompt(String providerName,
-                                              Callback<Ref.Double<User, CertificateData>> callback) {
+                                              Callback<Ref.Double<ProtboxUser, CertificateData>> callback) {
         if (instance == null) {
             instance = new eIDTokenLoadingWindow(providerName, callback);
         } else {
@@ -117,7 +117,7 @@ public class eIDTokenLoadingWindow extends JFrame {
         return instance;
     }
 
-    private static Ref.Double<User, CertificateData> getCertificateData(String alias, KeyStore ks) {
+    private static Ref.Double<ProtboxUser, CertificateData> getCertificateData(String alias, KeyStore ks) {
         Certificate cert = null;
         try {
             ks.load(null, null);
@@ -151,7 +151,7 @@ public class eIDTokenLoadingWindow extends JFrame {
                 logger.info(name + " " + ccNumber);
 
                 // RETURN CERTIFICATE, GENERATED PAIR AND SIGNATURE BYTES
-                User user = new User(
+                ProtboxUser user = new ProtboxUser(
                         chain, // Certificate chain
                         c, // X509 certificate
                         ccNumber, // user cc number
@@ -182,7 +182,7 @@ public class eIDTokenLoadingWindow extends JFrame {
         info.setText("Loading Card info ...");
     }
 
-    private void setInfoWithUser(User user) {
+    private void setInfoWithUser(ProtboxUser user) {
         info.setText(user.toString());
         info.setSize(430, 135);
         info.setIconTextGap(JLabel.RIGHT);

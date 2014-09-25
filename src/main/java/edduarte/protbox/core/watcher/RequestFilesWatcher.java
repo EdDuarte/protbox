@@ -12,16 +12,16 @@ import java.nio.file.*;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public class RequestFileWatcher implements Runnable {
+public class RequestFilesWatcher implements Runnable {
 
-    private static org.slf4j.Logger logger = LoggerFactory.getLogger(RequestFileWatcher.class);
+    private static org.slf4j.Logger logger = LoggerFactory.getLogger(RequestFilesWatcher.class);
 
     private Callback<File> callback;
 
 
     private WatchService watchService = FileSystems.getDefault().newWatchService();
 
-    public RequestFileWatcher(Path root, Callback<File> callback) throws IOException {
+    public RequestFilesWatcher(Path root, Callback<File> callback) throws IOException {
         this.callback = callback;
         watch(root);
     }

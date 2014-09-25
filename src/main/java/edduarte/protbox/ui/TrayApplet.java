@@ -1,9 +1,9 @@
 package edduarte.protbox.ui;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.synchronization.Sync;
+import edduarte.protbox.core.synchronization.SyncModule;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.ui.window.NewRegistryWindow;
+import edduarte.protbox.ui.windows.NewRegistryWindow;
 import org.jdesktop.swingx.VerticalLayout;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +54,7 @@ public class TrayApplet extends JDialog {
         close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
         close.setForeground(Color.gray);
         close.addMouseListener((OnMouseClick) e -> {
-            Sync.stop();
+            SyncModule.stop();
             System.exit(1);
         });
         this.add(close);

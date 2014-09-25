@@ -1,7 +1,7 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.User;
+import edduarte.protbox.core.ProtboxUser;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
@@ -25,9 +25,9 @@ public class UserListWindow extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(UserListWindow.class);
 
     private final boolean askingPermission;
-    Ref.Single<User> result;
+    Ref.Single<ProtboxUser> result;
 
-    private UserListWindow(final String sharedFolderName, final List<User> userList, boolean askingPermission) {
+    private UserListWindow(final String sharedFolderName, final List<ProtboxUser> userList, boolean askingPermission) {
         super(sharedFolderName + "'s users - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.askingPermission = askingPermission;
@@ -45,8 +45,8 @@ public class UserListWindow extends JFrame {
         final JLabel action = new JLabel(new ImageIcon(Constants.getAsset("ask.png")));
 
 
-        final JList<User> jList = new JList<>();
-        jList.setListData(userList.toArray(new User[0]));
+        final JList<ProtboxUser> jList = new JList<>();
+        jList.setListData(userList.toArray(new ProtboxUser[0]));
 
         final int[] over = new int[1];
         jList.addMouseListener(new OnMouseClick() {
@@ -92,7 +92,7 @@ public class UserListWindow extends JFrame {
 
                 list.setFixedCellHeight(32);
 
-                User user = ((User) value);
+                ProtboxUser user = ((ProtboxUser) value);
                 setFont(new Font(Constants.FONT, Font.PLAIN, 13));
 
                 JLabel machineName = new JLabel();
@@ -140,7 +140,7 @@ public class UserListWindow extends JFrame {
             action.setEnabled(false);
             action.addMouseListener((OnMouseClick) e -> {
                 if (action.isEnabled()) {
-                    User selectedUser = jList.getSelectedValue();
+                    ProtboxUser selectedUser = jList.getSelectedValue();
                         result = Ref.of1(selectedUser);
                         dispose();
                 }
@@ -193,7 +193,7 @@ public class UserListWindow extends JFrame {
     }
 
 
-    public static UserListWindow getInstance(final String sharedFolderName, final List<User> userList, final boolean askingPermission) {
+    public static UserListWindow getInstance(final String sharedFolderName, final List<ProtboxUser> userList, final boolean askingPermission) {
         return new UserListWindow(sharedFolderName, userList, askingPermission);
     }
 

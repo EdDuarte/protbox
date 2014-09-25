@@ -2,9 +2,9 @@ package edduarte.protbox.ui.panels;
 
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.Folder;
-import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.ui.window.ConfigurationWindow;
-import edduarte.protbox.ui.window.RestoreFileWindow;
+import edduarte.protbox.core.registry.ProtboxRegistry;
+import edduarte.protbox.ui.windows.ConfigurationWindow;
+import edduarte.protbox.ui.windows.RestoreFileWindow;
 
 import javax.swing.*;
 import javax.swing.border.MatteBorder;
@@ -14,7 +14,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.nio.file.Paths;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -23,9 +22,9 @@ import java.nio.file.Paths;
 public class PairPanel extends JLabel {
 
     private final JLabel revertButton, configButton;
-    private final PReg reg;
+    private final ProtboxRegistry reg;
 
-    public PairPanel(final PReg reg) {
+    public PairPanel(final ProtboxRegistry reg) {
         this.reg = reg;
         setLayout(null);
         setBorder(new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
@@ -36,7 +35,7 @@ public class PairPanel extends JLabel {
         icon.setBounds(10, 12, 28, 28);
         add(icon);
 
-        JLabel label = new JLabel(Paths.get(reg.SHARED_PATH).getFileName().toString());
+        JLabel label = new JLabel(reg.getPair().getSharedFolderFile().getName());
         label.setBounds(50, 12, 100, 28);
         label.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
         add(label);
@@ -110,7 +109,7 @@ public class PairPanel extends JLabel {
     }
 
 
-    public PReg getRegistry() {
+    public ProtboxRegistry getRegistry() {
         return reg;
     }
 

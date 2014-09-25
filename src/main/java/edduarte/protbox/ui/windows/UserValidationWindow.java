@@ -1,8 +1,8 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.User;
-import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.ProtboxUser;
+import edduarte.protbox.core.registry.ProtboxRegistry;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
@@ -32,7 +32,7 @@ public class UserValidationWindow extends JFrame {
 
     private static final Logger logger = LoggerFactory.getLogger(UserValidationWindow.class);
 
-    private static final Map<PReg, UserValidationWindow> instances = new HashMap<>();
+    private static final Map<ProtboxRegistry, UserValidationWindow> instances = new HashMap<>();
 
     private UserValidationWindow(final String registryAlgorithm, final SecretKey registryKey,
                                  final String sharedFolderName, final File askFile) {
@@ -42,9 +42,9 @@ public class UserValidationWindow extends JFrame {
 
         final File parent = askFile.getParentFile();
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(askFile))) {
-            final Ref.Triple<User, byte[], byte[]> receivedFileData = (Ref.Triple<User, byte[], byte[]>) in.readObject();
+            final Ref.Triple<ProtboxUser, byte[], byte[]> receivedFileData = (Ref.Triple<ProtboxUser, byte[], byte[]>) in.readObject();
             Constants.delete(askFile);
-            final User newUser = receivedFileData.first;
+            final ProtboxUser newUser = receivedFileData.first;
             final byte[] encodedPublicKey = receivedFileData.second;
             final byte[] signature = receivedFileData.third;
 
@@ -144,9 +144,12 @@ public class UserValidationWindow extends JFrame {
         }
     }
 
-    public static UserValidationWindow getInstance(final PReg registry, final String algorithm, final SecretKey key,
-                                                final String sharedFolderName, final File askFile) {
-        UserValidationWindow newInstance = instances.get(registry);
+    public static UserValidationWindow getInstance(final ProtboxRegistry registry, final File askFile) {
+        String algorithm = registry.getPair().getPairAlgorithm();
+        SecretKey key = registry.getPair().getPairKey();
+        String sharedFolderName = registry.getPair().getSharedFolderFile().getName();
+
+                UserValidationWindow newInstance = instances.get(registry);
         if (newInstance == null) {
             newInstance = new UserValidationWindow(algorithm, key, sharedFolderName, askFile);
             instances.put(registry, newInstance);
@@ -157,7 +160,7 @@ public class UserValidationWindow extends JFrame {
         return newInstance;
     }
 
-    private void generateKeyFile(File parent, User newUser, String algorithm, SecretKey directoryKey, byte[] encodedPublicKey) {
+    private void generateKeyFile(File parent, ProtboxUser newUser, String algorithm, SecretKey directoryKey, byte[] encodedPublicKey) {
         try {
 
             // GENERATE SIGNED PUBLIC KEY FROM ENCODED BYTES
@@ -184,7 +187,7 @@ public class UserValidationWindow extends JFrame {
         }
     }
 
-    private void generateInvalidFile(File parent, User newUser) {
+    private void generateInvalidFile(File parent, ProtboxUser newUser) {
         try {
             File invalidFile = new File(parent, "»invalid" + newUser.getId());
             invalidFile.createNewFile();

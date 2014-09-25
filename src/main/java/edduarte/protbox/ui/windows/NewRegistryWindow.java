@@ -1,11 +1,12 @@
-package edduarte.protbox.ui.window;
+package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.User;
-import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.core.watcher.RequestFileWatcher;
+import edduarte.protbox.core.ProtboxPair;
+import edduarte.protbox.core.ProtboxUser;
+import edduarte.protbox.core.registry.ProtboxRegistry;
+import edduarte.protbox.core.watcher.RequestFilesWatcher;
 import edduarte.protbox.exception.ProtException;
-import edduarte.protbox.ui.FolderValidation;
+import edduarte.protbox.core.FolderValidation;
 import edduarte.protbox.Main;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.ui.panels.PairPanel;
@@ -141,14 +142,14 @@ public class NewRegistryWindow extends JFrame {
         File askFile = new File(sharedFolderPath.toFile(), Constants.SPECIAL_FILE_ASK_PREFIX + Utils.generateRandom128bitsNumber());
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(askFile))) {
 
-            User thisUser = Main.getUser();
-            byte[] encodedPublicKey = Main.getCertificateData().encodedPublicKey;
-            byte[] signatureBytes = Main.getCertificateData().signatureBytes;
+            ProtboxUser thisUser = Main.getUser();
+            byte[] encodedPublicKey = Main.getCertificateData().getEncodedPublicKey();
+            byte[] signatureBytes = Main.getCertificateData().getSignatureBytes();
 
             // SAVE THE SIGNED PUBLIC KEY, THE SIGNATURE AND THE USER DATA IN THE "»ASK" FILE
             out.writeObject(Ref.of3(thisUser, encodedPublicKey, signatureBytes));
             out.flush();
-            waitForResponse(sharedFolderPath, askFile, Main.getCertificateData().exchangePrivateKey);
+            waitForResponse(sharedFolderPath, askFile, Main.getCertificateData().getExchangePrivateKey());
 
         } catch (Exception ex) {
             logger.error(ex.toString());
@@ -163,7 +164,7 @@ public class NewRegistryWindow extends JFrame {
             final WaitingForResponseWindow waitingWindow = WaitingForResponseWindow.getInstance();
             try {
                 final Timer timer = new Timer();
-                final Thread thread = new Thread(new RequestFileWatcher(dropPath, detectedFile -> {
+                final Thread thread = new Thread(new RequestFilesWatcher(dropPath, detectedFile -> {
                     if (detectedFile.getName().contains(Constants.SPECIAL_FILE_INVALID_PREFIX) &&
                             detectedFile.getName().substring(8).equalsIgnoreCase(Main.getUser().getId())) {
                         waitingWindow.dispose();
@@ -260,9 +261,13 @@ public class NewRegistryWindow extends JFrame {
 
     private void addInstance(SecretKey encryptionKey, SecretKey integrityKey, String algorithm, boolean isANewDirectory) {
         try {
-            PReg directory = new PReg(Main.getUser(), path1.getText(), path2.getText(), algorithm, encryptionKey, integrityKey, isANewDirectory);
-            directory.initialize();
-            JLabel l = new PairPanel(directory);
+            ProtboxPair pair =
+                    new ProtboxPair(path1.getText(), path2.getText(), algorithm, encryptionKey, integrityKey);
+
+            ProtboxRegistry registry = new ProtboxRegistry(Main.getUser(), pair, isANewDirectory);
+            registry.initialize();
+
+            JLabel l = new PairPanel(registry);
             l.setMinimumSize(new Dimension(0, 50));
             l.setPreferredSize(new Dimension(0, 50));
             JPanel instanceList = TrayApplet.getInstance().instanceList;
