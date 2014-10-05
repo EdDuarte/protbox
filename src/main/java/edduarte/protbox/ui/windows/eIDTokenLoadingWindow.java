@@ -1,13 +1,14 @@
 package edduarte.protbox.ui.windows;
 
-import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.ProtboxUser;
-import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.Main;
+import edduarte.protbox.core.CertificateData;
+import edduarte.protbox.core.Constants;
+import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Callback;
-import edduarte.protbox.utils.Ref;
+import edduarte.protbox.utils.TokenParser;
 import edduarte.protbox.utils.Utils;
+import edduarte.protbox.utils.dataholders.Double;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.security.x509.X509CertImpl;
@@ -15,9 +16,11 @@ import sun.security.x509.X509CertImpl;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -35,15 +38,15 @@ public class eIDTokenLoadingWindow extends JFrame {
     private ImageIcon loadingIcon = new ImageIcon(new File(Constants.INSTALL_DIR, "vfl3Wt7C").getAbsolutePath());
 
 
-    private eIDTokenLoadingWindow(final String providerName, final Callback<Ref.Double<ProtboxUser, CertificateData>> callback) {
+    private eIDTokenLoadingWindow(final String providerName, final Callback<Double<PbxUser, CertificateData>> callback) {
         super("Validating your Citizen Card - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.setLayout(null);
 
         info = new JLabel();
         setInfoWithLooking();
-        info.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
-        info.setBounds(20, 20, 200, 30);
+        info.setFont(Constants.FONT);
+        info.setBounds(20, 20, 250, 30);
         add(info);
 
 
@@ -88,12 +91,12 @@ public class eIDTokenLoadingWindow extends JFrame {
                     t.cancel();
 
                     setInfoWithLoading();
-                    Ref.Double<ProtboxUser, CertificateData> entry = getCertificateData(alias, ks);
+                    Double<PbxUser, CertificateData> entry = getCertificateData(alias, ks);
 
                     setInfoWithUser(entry.first);
                     Thread.sleep(2000);
 
-                    callback.onResult(Ref.of2(entry.first, entry.second));
+                    callback.onResult(new Double<>(entry.first, entry.second));
                     t.cancel();
                     dispose();
 
@@ -107,7 +110,7 @@ public class eIDTokenLoadingWindow extends JFrame {
     }
 
     public static eIDTokenLoadingWindow showPrompt(String providerName,
-                                              Callback<Ref.Double<ProtboxUser, CertificateData>> callback) {
+                                                   Callback<Double<PbxUser, CertificateData>> callback) {
         if (instance == null) {
             instance = new eIDTokenLoadingWindow(providerName, callback);
         } else {
@@ -117,17 +120,17 @@ public class eIDTokenLoadingWindow extends JFrame {
         return instance;
     }
 
-    private static Ref.Double<ProtboxUser, CertificateData> getCertificateData(String alias, KeyStore ks) {
+    private static Double<PbxUser, CertificateData> getCertificateData(String alias, KeyStore ks) {
         Certificate cert = null;
         try {
             ks.load(null, null);
 
             cert = ks.getCertificate(alias);
-            cert.verify(cert.getPublicKey());
+//            cert.verify(cert.getPublicKey());
             Certificate[] chain = ks.getCertificateChain(alias);
-            for (Certificate c : chain) {
-                c.verify(cert.getPublicKey());
-            }
+//            for (Certificate c : chain) {
+//                c.verify(cert.getPublicKey());
+//            }
 
             if (ks.isKeyEntry(alias)) {
                 PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
@@ -146,27 +149,32 @@ public class eIDTokenLoadingWindow extends JFrame {
                 byte[] signatureBytes = sig1.sign();
 
                 // Gets user first and last name and cc number
-                String name = c.getSubjectDN().getName();
-                String ccNumber = c.getSerialNumber().toString();
-                logger.info(name + " " + ccNumber);
+                TokenParser parser = TokenParser.parse(c);
+                logger.info(parser.getUserName() + " " + parser.getSerialNumber());
 
                 // RETURN CERTIFICATE, GENERATED PAIR AND SIGNATURE BYTES
-                ProtboxUser user = new ProtboxUser(
+                PbxUser user = new PbxUser(
                         chain, // Certificate chain
                         c, // X509 certificate
-                        ccNumber, // user cc number
-                        name, // user name
+                        parser.getSerialNumber(), // user cc number
+                        parser.getUserName(), // user name
                         InetAddress.getLocalHost().getHostName(), // machine name
                         Utils.getSerialNumber()); // machine serial number
 
                 CertificateData data = new CertificateData(encodedPublicKey, signatureBytes, pair.getPrivate());
 
-                return Ref.of2(user, data);
+                return new Double<>(user, data);
             }
-        } catch (Exception ex) {
+        } catch (CertificateException | KeyStoreException ex) {
+            ex.printStackTrace();
             JOptionPane.showMessageDialog(null, "You must insert you digital authentication certificate code in order to use this application!\n" +
                             "Please run the application again and insert you digital authentication certificate code!",
                     "Invalid Digital Signature Code!", JOptionPane.ERROR_MESSAGE);
+            System.exit(2);
+        } catch (GeneralSecurityException | IOException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(2);
         }
         return null;
@@ -182,15 +190,15 @@ public class eIDTokenLoadingWindow extends JFrame {
         info.setText("Loading Card info ...");
     }
 
-    private void setInfoWithUser(ProtboxUser user) {
+    private void setInfoWithUser(PbxUser user) {
         info.setText(user.toString());
         info.setSize(430, 135);
         info.setIconTextGap(JLabel.RIGHT);
-        info.setFont(new Font(Constants.FONT, Font.PLAIN, 14));
+        info.setFont(Constants.FONT.deriveFont(14f));
 
         JLabel machineName = new JLabel();
         machineName.setText("Machine Name: " + user.getMachineName());
-        machineName.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        machineName.setFont(Constants.FONT);
         machineName.setBounds(125, 100, 370, 50);
         add(machineName);
 

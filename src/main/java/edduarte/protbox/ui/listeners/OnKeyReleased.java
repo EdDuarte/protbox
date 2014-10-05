@@ -9,19 +9,18 @@ import java.awt.event.KeyListener;
  * either implements this interface (and all the methods it
  * contains) or extends the abstract <code>KeyAdapter</code> class
  * (overriding only the methods of interest).
- * <P>
+ * <p>
  * The listener object created from that class is then registered with a
  * component using the component's <code>addKeyListener</code>
  * method. A keyboard event is generated when a key is pressed, released,
  * or typed. The relevant method in the listener
  * object is then invoked, and the <code>KeyEvent</code> is passed to it.
  *
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @version 1.0
  * @see java.awt.event.KeyAdapter
  * @see java.awt.event.KeyEvent
  * @see <a href="http://java.sun.com/docs/books/tutorial/post1.0/ui/keylistener.html">Tutorial: Writing a Key Listener</a>
- *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
  */
 @FunctionalInterface
 public interface OnKeyReleased extends KeyListener {
@@ -31,7 +30,7 @@ public interface OnKeyReleased extends KeyListener {
      * See the class description for {@link java.awt.event.KeyEvent} for a definition of
      * a key typed event.
      */
-    default public void keyTyped(KeyEvent e){
+    default public void keyTyped(KeyEvent e) {
     }
 
     /**
@@ -39,7 +38,7 @@ public interface OnKeyReleased extends KeyListener {
      * See the class description for {@link KeyEvent} for a definition of
      * a key pressed event.
      */
-    default public void keyPressed(KeyEvent e){
+    default public void keyPressed(KeyEvent e) {
     }
 
     /**

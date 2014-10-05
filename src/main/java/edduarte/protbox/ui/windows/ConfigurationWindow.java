@@ -1,14 +1,14 @@
 package edduarte.protbox.ui.windows;
 
-import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.registry.ProtboxRegistry;
-import edduarte.protbox.exception.ProtException;
-import edduarte.protbox.core.FolderValidation;
 import edduarte.protbox.Main;
-import edduarte.protbox.ui.panels.PairPanel;
+import edduarte.protbox.core.Constants;
+import edduarte.protbox.core.FolderValidation;
+import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
+import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.utils.Utils;
 import ij.io.DirectoryChooser;
 import org.jdesktop.xswingx.PromptSupport;
@@ -19,7 +19,7 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.io.*;
+import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -30,15 +30,13 @@ import java.util.Map;
  * @version 2.0
  */
 public class ConfigurationWindow extends JDialog {
+    private static final Map<PReg, ConfigurationWindow> instances = new HashMap<>();
     private transient static org.slf4j.Logger logger = LoggerFactory.getLogger(ConfigurationWindow.class);
-
-    private static final Map<ProtboxRegistry, ConfigurationWindow> instances = new HashMap<>();
-
-    private ProtboxRegistry reg;
+    private PReg reg;
     private JTextField path;
     private JLabel ok;
 
-    private ConfigurationWindow(final ProtboxRegistry reg, final PairPanel instanceCell) {
+    private ConfigurationWindow(final PReg reg, final PairPanel instanceCell) {
         super();
         this.reg = reg;
         setLayout(null);
@@ -46,18 +44,18 @@ public class ConfigurationWindow extends JDialog {
         JLabel close = new JLabel(new ImageIcon(Constants.getAsset("close.png")));
         close.setLayout(null);
         close.setBounds(542, 7, 18, 18);
-        close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        close.setFont(Constants.FONT);
         close.setForeground(Color.gray);
         close.addMouseListener((OnMouseClick) e -> dispose());
         add(close);
 
         JLabel label2 = new JLabel("Prot folder: ");
-        label2.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        label2.setFont(Constants.FONT);
         label2.setBounds(20, 50, 100, 30);
         path = new JTextField(reg.getPair().getProtFolderPath() + "\\");
         PromptSupport.setPrompt("<none selected>", path);
         path.setMargin(new Insets(0, 10, 0, 10));
-        path.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        path.setFont(Constants.FONT);
         path.setBorder(new CompoundBorder(new LineBorder(new Color(210, 210, 210), 1, false), new EmptyBorder(0, 3, 0, 0)));
         path.setBounds(130, 50, 341, 30);
         path.addKeyListener((OnKeyReleased) e -> check());
@@ -78,7 +76,8 @@ public class ConfigurationWindow extends JDialog {
 
         JLabel stop = new JLabel("<html><font color='red'>Stop monitoring this folder</font></html>");
         stop.setIcon(new ImageIcon(Constants.getAsset("delete.png")));
-        stop.setFont(new Font(Constants.FONT, Font.PLAIN, 11));
+        stop.setFont(Constants.FONT.deriveFont(11f));
+        ;
         stop.setBounds(20, 100, 200, 30);
         stop.addMouseListener((OnMouseClick) e -> {
             if (JOptionPane.showConfirmDialog(
@@ -90,7 +89,7 @@ public class ConfigurationWindow extends JDialog {
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
                 reg.stop();
-                File file = new File(Constants.REGISTRIES_DIR, reg.ID);
+                File file = new File(Constants.REGISTRIES_DIR, reg.id);
                 Constants.delete(file);
 
                 // asks user if he wishes to keep the original files
@@ -103,8 +102,8 @@ public class ConfigurationWindow extends JDialog {
                     Constants.delete(reg.getPair().getProtFolderFile()); // delete prot folder
                 }
 
-                TrayApplet.getInstance().instanceList.remove(instanceCell);
-                if (TrayApplet.getInstance().instanceList.getComponentCount() == 0) {
+                TrayApplet.getInstance().removePairPanel(instanceCell);
+                if (TrayApplet.getInstance().getPairPanels().length == 0) {
 
                     // there are no instances left!
                     Main.hideTrayApplet();
@@ -170,13 +169,13 @@ public class ConfigurationWindow extends JDialog {
     }
 
     public static void closeAllInstances() {
-        for (ProtboxRegistry d : instances.keySet()) {
+        for (PReg d : instances.keySet()) {
             instances.get(d).dispose();
         }
         instances.clear();
     }
 
-    public static ConfigurationWindow getInstance(final ProtboxRegistry directory, final PairPanel instanceCell) {
+    public static ConfigurationWindow getInstance(final PReg directory, final PairPanel instanceCell) {
         ConfigurationWindow newInstance = instances.get(directory);
         if (newInstance == null) {
             newInstance = new ConfigurationWindow(directory, instanceCell);

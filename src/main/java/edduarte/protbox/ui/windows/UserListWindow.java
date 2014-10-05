@@ -1,10 +1,10 @@
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.ProtboxUser;
+import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
+import edduarte.protbox.utils.dataholders.Single;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.border.DropShadowBorder;
 import org.slf4j.Logger;
@@ -21,13 +21,14 @@ import java.util.List;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
+@Deprecated
 public class UserListWindow extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(UserListWindow.class);
 
     private final boolean askingPermission;
-    Ref.Single<ProtboxUser> result;
+    Single<PbxUser> result;
 
-    private UserListWindow(final String sharedFolderName, final List<ProtboxUser> userList, boolean askingPermission) {
+    private UserListWindow(final String sharedFolderName, final List<PbxUser> userList, boolean askingPermission) {
         super(sharedFolderName + "'s users - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.askingPermission = askingPermission;
@@ -36,7 +37,7 @@ public class UserListWindow extends JFrame {
         JLabel close = new JLabel(new ImageIcon(Constants.getAsset("close.png")));
         close.setLayout(null);
         close.setBounds(472, 7, 18, 18);
-        close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        close.setFont(Constants.FONT);
         close.setForeground(Color.gray);
         close.addMouseListener((OnMouseClick) e -> dispose());
         this.add(close);
@@ -45,8 +46,8 @@ public class UserListWindow extends JFrame {
         final JLabel action = new JLabel(new ImageIcon(Constants.getAsset("ask.png")));
 
 
-        final JList<ProtboxUser> jList = new JList<>();
-        jList.setListData(userList.toArray(new ProtboxUser[0]));
+        final JList<PbxUser> jList = new JList<>();
+        jList.setListData(userList.toArray(new PbxUser[0]));
 
         final int[] over = new int[1];
         jList.addMouseListener(new OnMouseClick() {
@@ -92,12 +93,12 @@ public class UserListWindow extends JFrame {
 
                 list.setFixedCellHeight(32);
 
-                ProtboxUser user = ((ProtboxUser) value);
-                setFont(new Font(Constants.FONT, Font.PLAIN, 13));
+                PbxUser user = ((PbxUser) value);
+                setFont(Constants.FONT.deriveFont(13f));
 
                 JLabel machineName = new JLabel();
                 machineName.setText("Machine Name: " + user.getMachineName());
-                machineName.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+                machineName.setFont(Constants.FONT.deriveFont(14f));
                 machineName.setBounds(106, 90, 370, 50);
                 add(machineName);
 
@@ -130,7 +131,7 @@ public class UserListWindow extends JFrame {
             JXLabel info = new JXLabel("<html><b>You will need to ask for permission in order to access this folder's contents.</b><br>" +
                     "Please choose from the list below which user from this folder do you wish to ask permission for access:</html>");
             info.setLineWrap(true);
-            info.setFont(new Font(Constants.FONT, Font.PLAIN, 13));
+            info.setFont(Constants.FONT.deriveFont(13f));
             info.setBounds(10, 25, 470, 70);
             add(info);
 
@@ -140,8 +141,8 @@ public class UserListWindow extends JFrame {
             action.setEnabled(false);
             action.addMouseListener((OnMouseClick) e -> {
                 if (action.isEnabled()) {
-                    ProtboxUser selectedUser = jList.getSelectedValue();
-                        result = Ref.of1(selectedUser);
+                    PbxUser selectedUser = jList.getSelectedValue();
+                    result = new Single<>(selectedUser);
                         dispose();
                 }
             });
@@ -193,7 +194,7 @@ public class UserListWindow extends JFrame {
     }
 
 
-    public static UserListWindow getInstance(final String sharedFolderName, final List<ProtboxUser> userList, final boolean askingPermission) {
+    public static UserListWindow getInstance(final String sharedFolderName, final List<PbxUser> userList, final boolean askingPermission) {
         return new UserListWindow(sharedFolderName, userList, askingPermission);
     }
 
@@ -214,7 +215,7 @@ public class UserListWindow extends JFrame {
                     "Confirm Cancel",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
-                result = Ref.of1(null);
+                result = new Single<>(null);
                 super.dispose();
             }
         } else {

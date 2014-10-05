@@ -36,7 +36,7 @@ public class ProviderListWindow extends JFrame {
         JLabel close = new JLabel(new ImageIcon(Constants.getAsset("close.png")));
         close.setLayout(null);
         close.setBounds(472, 7, 18, 18);
-        close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        close.setFont(Constants.FONT);
         close.setForeground(Color.gray);
         close.addMouseListener((OnMouseClick) e -> dispose());
         add(close);
@@ -133,7 +133,7 @@ public class ProviderListWindow extends JFrame {
 
         JXLabel info = new JXLabel("Choose which PKCS11 provider to use to load your eID token:");
         info.setLineWrap(true);
-        info.setFont(new Font(Constants.FONT, Font.PLAIN, 13));
+        info.setFont(Constants.FONT);
         info.setBounds(10, 10, 470, 40);
         add(info);
 
@@ -163,11 +163,10 @@ public class ProviderListWindow extends JFrame {
 
     @Override
     public void dispose() {
-        if (providerWasSelected) {
+        if (!providerWasSelected) {
             if (JOptionPane.showConfirmDialog(
-                    ProviderListWindow.this, "Are you sure you wish to cancel? You need " +
-                            "to ask for permission in order to access this folder!\n",
-                    "Confirm Cancel",
+                    ProviderListWindow.this, "You need to choose a PKCS11 provider in order to use the application. Are you sure you want to cancel and close the application?\n",
+                    "Confirm Close",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
                 super.dispose();

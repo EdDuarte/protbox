@@ -1,18 +1,19 @@
 package edduarte.protbox;
 
-import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.ProtboxUser;
-import edduarte.protbox.core.registry.ProtboxRegistry;
-import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.core.CertificateData;
+import edduarte.protbox.core.Constants;
+import edduarte.protbox.core.PbxUser;
+import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.panels.PairPanel;
-import edduarte.protbox.ui.windows.eIDTokenLoadingWindow;
 import edduarte.protbox.ui.windows.InsertPasswordWindow;
 import edduarte.protbox.ui.windows.NewRegistryWindow;
 import edduarte.protbox.ui.windows.ProviderListWindow;
+import edduarte.protbox.ui.windows.eIDTokenLoadingWindow;
 import edduarte.protbox.utils.Callback;
-import edduarte.protbox.utils.Ref;
+import edduarte.protbox.utils.dataholders.Double;
+import edduarte.protbox.utils.dataholders.Single;
 import ij.io.DirectoryChooser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.input.ReaderInputStream;
@@ -27,7 +28,10 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.ServerSocket;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.Provider;
+import java.security.ProviderException;
+import java.security.Security;
 import java.util.*;
 import java.util.List;
 
@@ -36,10 +40,10 @@ import java.util.List;
  * @version 2.0
  */
 public class Main {
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
     public static final Map<String, String> pkcs11Providers = new HashMap<>();
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static ProtboxUser user;
+    private static PbxUser user;
     private static CertificateData certificateData;
     private static TrayApplet trayApplet;
     private static SystemTray tray;
@@ -86,9 +90,19 @@ public class Main {
 
         if (providersConfigFiles != null) {
             for (File f : providersConfigFiles) {
+                String fileExtension = f.getName();
+                if (!fileExtension.contains(".")) {
+                    continue;
+                }
+                fileExtension = fileExtension.substring(fileExtension.lastIndexOf('.'), fileExtension.length());
+                if (!fileExtension.equals(".config")) {
+                    continue;
+                }
                 try {
+                    System.out.println(f.getAbsolutePath());
                     List<String> lines = FileUtils.readLines(f);
-                    String aliasLine = lines.stream()
+                    String aliasLine = lines
+                            .stream()
                             .filter(line -> line.contains("alias"))
                             .findFirst()
                             .get();
@@ -107,11 +121,19 @@ public class Main {
                     pkcs11Providers.put(p.getName(), alias);
 
                 } catch (IOException | ProviderException ex) {
-                    ex.printStackTrace();
-                    JOptionPane.showMessageDialog(null,
-                            "Error while setting up PKCS11 provider from configuration file " + f.getName() +
-                                    ".\n"+ex.getMessage(),
-                            "Error loading PKCS11 provider", JOptionPane.ERROR_MESSAGE);
+                    if (ex.getMessage().equals("Initialization failed")) {
+                        JOptionPane.showMessageDialog(null,
+                                "Protbox did not found an available smart card reader in the current machine!\n"
+                                        + "Please connect a smart card reader before opening the application.",
+                                "Smart card reader not found", JOptionPane.ERROR_MESSAGE);
+                        System.exit(1);
+                    } else {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null,
+                                "Error while setting up PKCS11 provider from configuration file " + f.getName() +
+                                        ".\n" + ex.getMessage(),
+                                "Error loading PKCS11 provider", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         }
@@ -142,12 +164,12 @@ public class Main {
                 certificateData = result.pollSecond();
 
                 // gets a password to use on the saved registry files (for loading and saving)
-                final Ref.Single<Callback<SecretKey>> callbackRef = Ref.of1(null);
-                callbackRef.value = password -> {
+                final Single<Callback<SecretKey>> callbackHolder = new Single<>(null);
+                callbackHolder.value = password -> {
                     registriesPasswordKey = password;
                     try {
                         // if there are serialized files, load them if they can be decoded by this user's private key
-                        final List<Ref.Double<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
+                        final List<Double<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
                         if (Constants.verbose) {
                             logger.info("Reading serialized registry files...");
                         }
@@ -161,7 +183,7 @@ public class Main {
                                         Cipher cipher = Cipher.getInstance("AES");
                                         cipher.init(Cipher.DECRYPT_MODE, registriesPasswordKey);
                                         byte[] realData = cipher.doFinal(data);
-                                        serializedDirectoryFiles.add(Ref.of2(f, realData));
+                                        serializedDirectoryFiles.add(new Double<>(f, realData));
                                     } catch (GeneralSecurityException ex) {
                                         if (Constants.verbose) {
                                             logger.info("Inserted Password does not correspond to " + f.getName());
@@ -180,8 +202,7 @@ public class Main {
 
                         } else { // there were serialized directories
                             loadRegistry(serializedDirectoryFiles);
-                            trayApplet.instanceList.revalidate();
-                            trayApplet.instanceList.repaint();
+                            trayApplet.repaint();
                             showTrayApplet();
                         }
 
@@ -195,10 +216,10 @@ public class Main {
                                 null, "The inserted password was invalid! Please try another one!",
                                 "Invalid password!",
                                 JOptionPane.ERROR_MESSAGE);
-                        insertPassword(callbackRef.value);
+                        insertPassword(callbackHolder.value);
                     }
                 };
-                insertPassword(callbackRef.value);
+                insertPassword(callbackHolder.value);
 
             });
         });
@@ -217,13 +238,13 @@ public class Main {
     }
 
 
-    private static void loadRegistry(final List<Ref.Double<File, byte[]>> dataList) throws
+    private static void loadRegistry(final List<Double<File, byte[]>> dataList) throws
             IOException,
             ReflectiveOperationException,
             GeneralSecurityException,
             ProtException {
 
-        for (Ref.Double<File, byte[]> pair : dataList) {
+        for (Double<File, byte[]> pair : dataList) {
             File serialized = pair.first;
             if (Constants.verbose) {
                 logger.info("Reading {}...", serialized);
@@ -231,7 +252,7 @@ public class Main {
 
             try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(pair.pollSecond()))) {
 
-                ProtboxRegistry reg = (ProtboxRegistry) stream.readObject();
+                PReg reg = (PReg) stream.readObject();
                 if (reg.getUser().equals(user)) {
 
                     if (!reg.getPair().getSharedFolderFile().exists()) {
@@ -255,16 +276,16 @@ public class Main {
                         // start the registry
                         reg.initialize();
                         PairPanel l = new PairPanel(reg);
-                        trayApplet.instanceList.add(l);
+                        trayApplet.addPairPanel(l);
                         if (Constants.verbose) {
-                            logger.info("Added registry " + reg.ID + " to instance list...");
+                            logger.info("Added registry " + reg.id + " to instance list...");
                         }
                     }
                 }
             }
         }
 
-        if (trayApplet.instanceList.getComponentCount() == 0) {
+        if (trayApplet.getPairPanels().length == 0) {
             // there are no instances left!
             hideTrayApplet();
         }
@@ -273,7 +294,7 @@ public class Main {
 
     private static void exit() {
         // if there are directories, save them into serialized files
-        if (user != null && trayApplet != null && trayApplet.instanceList.getComponents().length != 0) {
+        if (user != null && trayApplet != null && trayApplet.getPairPanels().length != 0) {
             if (Constants.verbose) {
                 logger.info("Serializing and saving directories...");
             }
@@ -285,41 +306,39 @@ public class Main {
     private static void saveAllRegistries() {
         try {
             Cipher cipher = Cipher.getInstance("AES");
-            for (Component c : trayApplet.instanceList.getComponents()) {
-                if (c.getClass().getSimpleName().toLowerCase().equalsIgnoreCase("InstanceCell")) {
-                    ProtboxRegistry toSerialize = ((PairPanel) c).getRegistry();
+            for (PairPanel c : trayApplet.getPairPanels()) {
+                PReg toSerialize = c.getRegistry();
 
-                    // stops the registry, which stops the running threads and processes
-                    toSerialize.stop();
-                    File file = new File(Constants.REGISTRIES_DIR, toSerialize.ID);
+                // stops the registry, which stops the running threads and processes
+                toSerialize.stop();
+                File file = new File(Constants.REGISTRIES_DIR, toSerialize.id);
 
-                    // encrypt directories using the inserted password at the beginning of the application
-                    try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-                         ObjectOutputStream stream = new ObjectOutputStream(out)) {
-                        stream.writeObject(toSerialize);
-                        stream.flush();
+                // encrypt directories using the inserted password at the beginning of the application
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ObjectOutputStream stream = new ObjectOutputStream(out)) {
+                    stream.writeObject(toSerialize);
+                    stream.flush();
 
-                        byte[] data = out.toByteArray();
-                        cipher.init(Cipher.ENCRYPT_MODE, registriesPasswordKey);
-                        data = cipher.doFinal(data);
+                    byte[] data = out.toByteArray();
+                    cipher.init(Cipher.ENCRYPT_MODE, registriesPasswordKey);
+                    data = cipher.doFinal(data);
 
-                        FileUtils.writeByteArrayToFile(file, data);
+                    FileUtils.writeByteArrayToFile(file, data);
 
-                    } catch (GeneralSecurityException ex) {
-                        logger.error("Invalid password! Registry {} not saved!", toSerialize.toString());
-                        ex.printStackTrace();
-                    }
+                } catch (GeneralSecurityException ex) {
+                    logger.error("Invalid password! Registry {} not saved!", toSerialize.toString());
+                    ex.printStackTrace();
                 }
             }
         } catch (GeneralSecurityException | IOException ex) {
             if (Constants.verbose) {
-                logger.info("Error whole saving registries.", ex);
+                logger.info("Error while saving registries.", ex);
             }
         }
     }
 
 
-    private static void changeProtPath(ProtboxRegistry reg, File serializedDirectory) throws ProtException {
+    private static void changeProtPath(PReg reg, File serializedDirectory) throws ProtException {
 
         if (JOptionPane.showConfirmDialog(
                 null, "The prot folder from one of your registries\n" +
@@ -355,7 +374,7 @@ public class Main {
     }
 
 
-    public static ProtboxUser getUser() {
+    public static PbxUser getUser() {
         return user;
     }
 

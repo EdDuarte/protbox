@@ -1,17 +1,18 @@
 package edduarte.protbox.core.registry;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.Folder;
-import edduarte.protbox.core.ProtboxPair;
-import edduarte.protbox.core.ProtboxUser;
+import edduarte.protbox.core.FolderOption;
+import edduarte.protbox.core.PbxPair;
+import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.core.synchronization.SyncModule;
 import edduarte.protbox.core.watcher.RegistryWatcher;
 import edduarte.protbox.core.watcher.RequestFilesWatcher;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.windows.UserValidationWindow;
-import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
+import edduarte.protbox.utils.dataholders.Pair;
+import edduarte.protbox.utils.dataholders.Single;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
@@ -38,7 +39,7 @@ import java.util.List;
  * dates and lengths of contents).
  *
  * Coherency checking and synchronization tasks run on a periodic basis and use that structural
- * information and the effective contents of each {@link ProtboxEntry} to take the appropriate data
+ * information and the effective contents of each {@link PbxEntry} to take the appropriate data
  * transfer decisions.
  *
  * Note that a PReg is a local, private data structure that helps a local {\protbox} instance to
@@ -48,11 +49,11 @@ import java.util.List;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public final class ProtboxRegistry implements Serializable {
+public final class PReg implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private transient static final Logger logger = LoggerFactory.getLogger(ProtboxRegistry.class);
+    private transient static final Logger logger = LoggerFactory.getLogger(PReg.class);
 
 
     /**
@@ -60,27 +61,7 @@ public final class ProtboxRegistry implements Serializable {
      * Every time the application is closed, this registry is serialized into a file with this name, and every
      * time the application is opened, this registry is resumed using the stored file with this name.
      */
-    public final String ID = Utils.generateUniqueId();
-
-
-    /**
-     * The user with local access to this registry. When this registry is serialized, the serialized file is
-     * encrypted with this user's public key, guaranteeing that every data stored in this registry, including
-     * entries and the secret key, will be protected. With this, to load the serialized file, it is always required
-     * to validate the users Citizen Card.
-     */
-    private final ProtboxUser user;
-
-    /**
-     * The pair that this registry maintains and validates throughout the application's execution.
-     */
-    private final ProtboxPair pair;
-
-
-    /**
-     * The initial pair that links to every other pair through a node-based implementation.
-     */
-    private ProtboxFolder root;
+    public final String id;
 
 
     /**
@@ -90,33 +71,64 @@ public final class ProtboxRegistry implements Serializable {
     public final List<String> SKIP_WATCHER_ENTRIES;
 
 
+    /**
+     * The user with local access to this registry. When this registry is serialized, the serialized file is
+     * encrypted with this user's public key, guaranteeing that every data stored in this registry, including
+     * entries and the secret key, will be protected. With this, to load the serialized file, it is always required
+     * to validate the users Citizen Card.
+     */
+    private final PbxUser user;
+
+
+    /**
+     * The pair that this registry maintains and validates throughout the application's execution.
+     */
+    private final PbxPair pair;
+
+
+    /**
+     * The root entry that is linked to every other entry through a node-based implementation.
+     */
+    private PbxFolder root;
+
+
+    /**
+     * The maximum amount of data per file stored for backup and restoring purposes.
+     */
+    private int maxDeletedSize;
+
 
     private transient Cipher CIPHER;
 
+
     private transient boolean initialized;
+
 
     private transient boolean currentlyIndexing;
 
+
     private transient Timer timerIndex = new Timer();
+
 
     private transient Thread sharedFolderWatcher;
 
+
     private transient Thread protFolderWatcher;
+
 
     private transient Thread requestFileWatcher;
 
 
     /**
-     * Constructs a new PReg structure that links the Shared and the Prot folders using entries.
+     * Constructs a new registry structure that links the Shared and the Prot folders using entries.
      */
-    public ProtboxRegistry(ProtboxUser user, ProtboxPair pair, boolean isANewPReg) throws ProtException {
-
-
+    public PReg(PbxUser user, PbxPair pair, boolean isANewPReg) throws ProtException {
+        this.id = Utils.generateUniqueId();
         this.user = user;
         this.pair = pair;
         this.SKIP_WATCHER_ENTRIES = new ArrayList<>();
         this.initialized = false;
-        this.root = new ProtboxFolder(null, "", "");
+        this.root = new PbxFolder(this, null, "", "");
         if (isANewPReg) {
             try {
                 Constants.moveContentsFromDirToDir(pair.getSharedFolderFile(), pair.getProtFolderFile());
@@ -126,10 +138,10 @@ public final class ProtboxRegistry implements Serializable {
         }
     }
 
-    private static void emptyData(ProtboxEntry entry) {
-        if (entry instanceof ProtboxFile) {
-            ProtboxFile pairFile = (ProtboxFile) entry;
-            pairFile.emptyData();
+    private static void emptyData(PbxEntry entry) {
+        if (entry instanceof PbxFile) {
+            PbxFile PbxFile = (PbxFile) entry;
+            PbxFile.clearData();
         }
     }
 
@@ -156,8 +168,8 @@ public final class ProtboxRegistry implements Serializable {
         // starts the registry watchers for both prot and shared folders
         final Path sharedPath = Paths.get(pair.getSharedFolderPath());
         final Path protPath = Paths.get(pair.getProtFolderPath());
-        sharedFolderWatcher = new Thread(new RegistryWatcher(this, Folder.SHARED, sharedPath));
-        protFolderWatcher = new Thread(new RegistryWatcher(this, Folder.PROT, protPath));
+        sharedFolderWatcher = new Thread(new RegistryWatcher(this, FolderOption.SHARED, sharedPath));
+        protFolderWatcher = new Thread(new RegistryWatcher(this, FolderOption.PROT, protPath));
         sharedFolderWatcher.start();
         protFolderWatcher.start();
 
@@ -201,7 +213,7 @@ public final class ProtboxRegistry implements Serializable {
         initialized = false;
     }
 
-    private ProtboxFolder goToFolder(String path, Folder at) {
+    private PbxFolder goToFolder(String path, FolderOption at) {
 
         String relative = getRelativePath(path, at);
         if (relative.equals("")) {
@@ -209,7 +221,7 @@ public final class ProtboxRegistry implements Serializable {
         }
 
         String[] pathParts = relative.split("/");
-        ProtboxFolder atFolder = root;
+        PbxFolder atFolder = root;
         for (String next : pathParts) {
             atFolder = atFolder.goToFolder(next);
         }
@@ -217,11 +229,11 @@ public final class ProtboxRegistry implements Serializable {
         return atFolder;
     }
 
-    private String getRelativePath(String absolutePath, Folder at) {
+    private String getRelativePath(String absolutePath, FolderOption at) {
         String toRemoveFromPath = "";
-        if (at.equals(Folder.SHARED))
+        if (at.equals(FolderOption.SHARED))
             toRemoveFromPath = pair.getSharedFolderPath() + File.separator;
-        else if (at.equals(Folder.PROT))
+        else if (at.equals(FolderOption.PROT))
             toRemoveFromPath = pair.getProtFolderPath() + File.separator;
 
         toRemoveFromPath = toRemoveFromPath.replace("\\", File.separator);
@@ -240,8 +252,8 @@ public final class ProtboxRegistry implements Serializable {
         currentlyIndexing = false;
     }
 
-    private void integrityCheck(ProtboxFolder pairFolder, File sharedFolder, File protFolder) throws ProtException {
-        if (pairFolder == null)
+    private void integrityCheck(PbxFolder folder, File sharedFolder, File protFolder) throws ProtException {
+        if (folder == null)
             return;
 
         // generate structures to perform a careful ONE-BY-ONE file and folder checking
@@ -250,31 +262,41 @@ public final class ProtboxRegistry implements Serializable {
         List<File> filesAtShared = new ArrayList<>();
         List<File> filesAtProt = new ArrayList<>();
 
-        if (sharedFolder != null && sharedFolder.listFiles() != null) {
-            Arrays.asList(sharedFolder.listFiles())
-                    .stream()
-                    .filter(f -> f.getName().charAt(0) != Constants.SPECIAL_FILE_FIRST_CHAR)
-                    .forEach(f -> {
-                        filesAtShared.add(f);
-                        sharedMap.put(f.getName(), f);
-                    });
+        if (sharedFolder != null) {
+            File[] list = sharedFolder.listFiles();
+            if (list != null) {
+                Arrays.asList(list)
+                        .stream()
+                        .filter(f -> f.getName().charAt(0) != Constants.SPECIAL_FILE_FIRST_CHAR)
+                        .forEach(f -> {
+                            filesAtShared.add(f);
+                            sharedMap.put(f.getName(), f);
+                        });
+            }
         }
+
         if (protFolder != null) {
-            Collections.addAll(filesAtProt, protFolder.listFiles());
-            filesAtProt.stream()
-                    .forEach(f -> protMap.put(f.getName(), f));
+            File[] list = protFolder.listFiles();
+            if (list != null) {
+                Arrays.asList(list)
+                        .stream()
+                        .forEach(f -> {
+                            filesAtProt.add(f);
+                            protMap.put(f.getName(), f);
+                        });
+            }
         }
 
 
         // checking sub-files and sub-folders with reg pairs (= already existed in the registry before checking)
-        for (ProtboxFile f : pairFolder.getSubFiles()) {
+        for (PbxFile f : folder.getSubFiles()) {
             File sharedFile = sharedMap.get(f.encodedName());
             File protFile = protMap.get(f.realName());
             evaluate(f, sharedFile, protFile);
             filesAtShared.remove(sharedFile);
             filesAtProt.remove(protFile);
         }
-        for (ProtboxFolder f : pairFolder.getSubFolders()) {
+        for (PbxFolder f : folder.getSubFolders()) {
             File sharedFile = sharedMap.get(f.encodedName());
             File protFile = protMap.get(f.realName());
             integrityCheck(f, sharedFile, protFile);
@@ -290,25 +312,27 @@ public final class ProtboxRegistry implements Serializable {
             try {
                 String realName = convertEncodedNameToRealName(sharedFile.getName());
                 File protFile = protMap.get(realName);
-                ProtboxEntry newEntry = evaluate(null, sharedFile, protFile);
+                PbxEntry newEntry = evaluate(null, sharedFile, protFile);
                 if (sharedFile.isDirectory()) {
                     // iterate this folder with the pair that was just created
-                    integrityCheck((ProtboxFolder) newEntry, sharedFile, protFile);
+                    integrityCheck((PbxFolder) newEntry, sharedFile, protFile);
                 }
 
             } catch (GeneralSecurityException ex) {
                 logger.error("Error while checking shared file without pair " + sharedFile.getName(), ex);
             }
         }
+
         for (File protFile : filesAtProt) {
             // iterating prot files that do not exist in this PReg
+
             try {
                 String encodedName = convertRealNameToEncodedName(protFile.getName());
                 File sharedFile = sharedMap.get(encodedName);
-                ProtboxEntry newEntry = evaluate(null, sharedFile, protFile);
+                PbxEntry newEntry = evaluate(null, sharedFile, protFile);
                 if (protFile.isDirectory()) {
                     // iterate this folder with the pair that was just created
-                    integrityCheck((ProtboxFolder) newEntry, sharedFile, protFile);
+                    integrityCheck((PbxFolder) newEntry, sharedFile, protFile);
                 }
 
             } catch (GeneralSecurityException ex) {
@@ -317,60 +341,61 @@ public final class ProtboxRegistry implements Serializable {
         }
     }
 
-    private ProtboxEntry evaluate(ProtboxEntry entry, File sharedFile, File protFile) throws ProtException {
+    private PbxEntry evaluate(PbxEntry entry, File sharedFile, File protFile) throws ProtException {
         try {
             if (entry == null) {
                 // is a file or folder that is not represented by a Pair on this PReg
 
                 if (sharedFile == null && protFile != null) {
                     // new file at prot folder -> add to registry and sync to shared
-                    return add(protFile, Folder.PROT);
+                    return add(protFile, FolderOption.PROT);
 
                 } else if (sharedFile != null && protFile == null) {
                     // new file at shared folder -> add to registry and sync to prot
-                    return add(sharedFile, Folder.SHARED);
+                    return add(sharedFile, FolderOption.SHARED);
 
                 } else if (sharedFile != null && protFile != null) {
                     // new files at both folders -> add to registry as conflicted copy and sync to shared
-                    addConflicted(protFile, Folder.PROT);
-                    return add(sharedFile, Folder.SHARED);
+                    addConflicted(protFile, FolderOption.PROT);
+                    return add(sharedFile, FolderOption.SHARED);
                 }
 
-            } else if (entry instanceof ProtboxFile) {
+            } else if (entry instanceof PbxFile) {
                 // is a file that is already represented by a Pair on this PReg
 
-                ProtboxFile pair0 = (ProtboxFile) entry;
-                if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists()) && !entry.hidden) {
-                    // pair was hidden from both folders, data cannot be obtained -> delete it from registry
-                    permanentDelete(entry);
+                PbxFile entry1 = (PbxFile) entry;
+                if ((sharedFile == null || !sharedFile.exists()) &&
+                        (protFile == null || !protFile.exists()) && !entry.hidden) {
+                    // pair was deleted from both folders -> keep entry and do nothing
+//                    permanentDelete(entry);
 
                 } else if ((sharedFile == null || !sharedFile.exists()) && protFile != null) {
                     // file was deleted from shared folder
                     Date protLS = new Date(protFile.lastModified());
-                    Date pairLS = pair0.getLastModified();
+                    Date entryLS = entry1.getLatestSnapshot().getSnapshotLastModifiedDate();
 
-                    if (protLS.compareTo(pairLS) < 0) {
+                    if (protLS.compareTo(entryLS) < 0) {
                         // prot file is more recent than pair -> sync prot file to shared folder
                         SyncModule.toShared(this, entry);
 
                     } else {
                         // prot file is older than pair -> delete it while retaining data
-                        delete(protFile.toPath(), Folder.PROT);
+                        delete(protFile.toPath(), FolderOption.PROT);
 
                     }
 
                 } else if (sharedFile != null && protFile == null) {
                     // file was deleted from prot folder
                     Date sharedLS = new Date(sharedFile.lastModified());
-                    Date pairLS = pair0.getLastModified();
+                    Date entryLS = entry1.getLatestSnapshot().getSnapshotLastModifiedDate();
 
-                    if (sharedLS.compareTo(pairLS) < 0) {
+                    if (sharedLS.compareTo(entryLS) < 0) {
                         // shared file is more recent than pair -> sync shared file to prot folder
                         SyncModule.toProt(this, entry);
 
                     } else {
                         // shared file is older than pair -> delete it while retaining data
-                        delete(sharedFile.toPath(), Folder.SHARED);
+                        delete(sharedFile.toPath(), FolderOption.SHARED);
 
                     }
 
@@ -379,10 +404,10 @@ public final class ProtboxRegistry implements Serializable {
 
                     Date sharedLS = new Date(sharedFile.lastModified());
                     Date protLS = new Date(protFile.lastModified());
-                    Date pairLS = pair0.getLastModified();
+                    Date entryLS = entry1.getLatestSnapshot().getSnapshotLastModifiedDate();
                     int compareSharedProt = sharedLS.compareTo(protLS);
-                    int compareProtPair = protLS.compareTo(pairLS);
-                    int compareSharedPair = sharedLS.compareTo(pairLS);
+                    int compareProtPair = protLS.compareTo(entryLS);
+                    int compareSharedPair = sharedLS.compareTo(entryLS);
 
                     if (compareSharedProt == 0 && compareProtPair == 0) {
                         // all last modified dates are equal -> do nothing
@@ -399,12 +424,12 @@ public final class ProtboxRegistry implements Serializable {
 
                         } else if (compareProtPair != 0 && compareSharedPair != 0) {
                             // both files were updated -> conflict
-                            addConflicted(protFile, Folder.PROT);
+                            addConflicted(protFile, FolderOption.PROT);
                             SyncModule.toProt(this, entry);
                         }
                     }
                 }
-            } else if (entry instanceof ProtboxFolder) {
+            } else if (entry instanceof PbxFolder) {
                 // is a folder that is already represented by a Pair on this PReg
                 if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists()) && !entry.hidden) {
                     // pair was deleted from both folders, data cannot be obtained -> delete it from registry
@@ -415,7 +440,7 @@ public final class ProtboxRegistry implements Serializable {
                     hidePair(entry);
 
                 } else if (sharedFile != null) {
-                    // pair was deleted at prot folder or was not hidden at all -> assure that it is updated to shared folder
+                    // pair was deleted at prot folder or was not deleted at all -> assure that it is updated to shared folder
                     SyncModule.toProt(this, entry);
 
                 }
@@ -431,7 +456,7 @@ public final class ProtboxRegistry implements Serializable {
 
     // -- ADD METHODS --
 
-    public ProtboxEntry add(File file, Folder fileFrom) throws ProtException {
+    public PbxEntry add(File file, FolderOption fileFrom) throws ProtException {
         if (Constants.verbose) {
             logger.info("Adding " + file.getAbsolutePath());
         }
@@ -439,7 +464,7 @@ public final class ProtboxRegistry implements Serializable {
     }
 
 
-    public ProtboxEntry addConflicted(File file, Folder fileFrom) throws ProtException {
+    public PbxEntry addConflicted(File file, FolderOption fileFrom) throws ProtException {
         if (Constants.verbose) {
             logger.info("Adding conflicted copy " + file.getAbsolutePath());
         }
@@ -447,18 +472,18 @@ public final class ProtboxRegistry implements Serializable {
     }
 
 
-    private ProtboxEntry addAux(File file, boolean conflicted, Folder fileFrom) throws ProtException {
-        ProtboxEntry newEntry = null;
-        if (fileFrom.equals(Folder.PROT)) {
+    private PbxEntry addAux(File file, boolean conflicted, FolderOption fileFrom) throws ProtException {
+        PbxEntry newEntry = null;
+        if (fileFrom.equals(FolderOption.PROT)) {
             newEntry = addOnlyToPRegFromProt(file, conflicted);
-        } else if (fileFrom.equals(Folder.SHARED)) {
+        } else if (fileFrom.equals(FolderOption.SHARED)) {
             newEntry = addOnlyToPRegFromShared(file, conflicted);
         }
 
         if (newEntry != null) {
-            if (fileFrom.equals(Folder.PROT)) {
+            if (fileFrom.equals(FolderOption.PROT)) {
                 SyncModule.toShared(this, newEntry);
-            } else if (fileFrom.equals(Folder.SHARED)) {
+            } else if (fileFrom.equals(FolderOption.SHARED)) {
                 SyncModule.toProt(this, newEntry);
             }
         }
@@ -466,7 +491,7 @@ public final class ProtboxRegistry implements Serializable {
     }
 
 
-    private ProtboxEntry addOnlyToPRegFromProt(File file, boolean conflicted) throws ProtException {
+    private PbxEntry addOnlyToPRegFromProt(File file, boolean conflicted) throws ProtException {
         try {
             String realName = file.getName();
             if (conflicted && !file.isDirectory()) {
@@ -486,21 +511,21 @@ public final class ProtboxRegistry implements Serializable {
 
 
             String parentPath = file.getParentFile().getAbsolutePath();
-            ProtboxFolder parent = null;
+            PbxFolder parent = null;
             if (!parentPath.equalsIgnoreCase(pair.getProtFolderPath()))
-                parent = goToFolder(parentPath, Folder.PROT);
+                parent = goToFolder(parentPath, FolderOption.PROT);
 
             if (parent == null)
                 parent = root;
 
-            return addFinal(file, parent, realName, encodedName, Folder.PROT);
+            return addFinal(file, parent, realName, encodedName, FolderOption.PROT);
         } catch (IOException | GeneralSecurityException ex) {
             throw new ProtException(ex);
         }
     }
 
 
-    private ProtboxEntry addOnlyToPRegFromShared(File file, boolean conflicted) throws ProtException {
+    private PbxEntry addOnlyToPRegFromShared(File file, boolean conflicted) throws ProtException {
         try {
             String encodedName = file.getName();
             String realName = convertEncodedNameToRealName(encodedName);
@@ -520,77 +545,78 @@ public final class ProtboxRegistry implements Serializable {
             }
 
             String parentPath = file.getParentFile().getAbsolutePath();
-            ProtboxFolder parent = null;
+            PbxFolder parent = null;
             if (!parentPath.equalsIgnoreCase(pair.getSharedFolderPath()))
-                parent = goToFolder(parentPath, Folder.SHARED);
+                parent = goToFolder(parentPath, FolderOption.SHARED);
 
             if (parent == null)
                 parent = root;
 
-            return addFinal(file, parent, realName, encodedName, Folder.SHARED);
+            return addFinal(file, parent, realName, encodedName, FolderOption.SHARED);
         } catch (IOException | GeneralSecurityException ex) {
             throw new ProtException(ex);
         }
     }
 
 
-    private ProtboxEntry addFinal(File file, ProtboxFolder parent, String realName, String encodedName, Folder fromFolder) throws ProtException, IOException, GeneralSecurityException {
-        ProtboxEntry entryToReturn;
+    private PbxEntry addFinal(final File file, final PbxFolder parent,
+                              final String realName, final String encodedName, final FolderOption fromFolder)
+            throws ProtException, IOException, GeneralSecurityException {
 
         if (file.isDirectory()) {
-            // checks if a hidden PairFolder that represents the files already exists
-            ProtboxFolder pair = parent.getSubFolders()
-                    .stream()
-                    .filter(ProtboxEntry::isHidden)
-                    .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
-                    .findFirst()
-                    .get();
+            PbxFolder pair;
 
-            if (pair != null) {
-                // needs to show the existing PairFolder
+            try {
+                // checks if a deleted PbxFolder that represents the files already exists
+                pair = parent.getSubFolders()
+                        .stream()
+                        .filter(PbxEntry::isHidden)
+                        .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
+                        .findFirst()
+                        .get();
+
+                // shows the existing PbxFolder
                 showPair(pair);
 
-            } else {
-                // needs to create a new PairFolder
-                pair = new ProtboxFolder(parent, encodedName, realName);
+            } catch (NoSuchElementException ex) {
+
+                // there are no deleted PbxFolder, so create a new one
+                pair = new PbxFolder(this, parent, encodedName, realName);
+
+                // links the just created PbxFolder with this registry's entry hierarchy
                 parent.addFolder(pair);
 
             }
 
-            entryToReturn = pair;
+            return pair;
 
         } else {
-            // checks if a hidden PairFile that represents the files already exists
-            ProtboxFile pair = parent.getSubFiles()
-                    .stream()
-                    .filter(ProtboxEntry::isHidden)
-                    .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
-                    .findFirst()
-                    .get();
+            PbxFile pair;
 
-            if (pair != null) {
-                // needs to show the existing PairFile with updated data
-                byte[] newData = FileUtils.readFileToByteArray(file);
-                if (fromFolder.equals(Folder.SHARED)) {
-                    pair.setData(decrypt(newData));
+            try {
+                // checks if a deleted PbxFile that represents the files already exists
+                pair = parent.getSubFiles()
+                        .stream()
+                        .filter(PbxEntry::isHidden)
+                        .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
+                        .findFirst()
+                        .get();
 
-                } else if (fromFolder.equals(Folder.PROT)) {
-                    pair.setData(newData);
-
-                }
+                // shows the existing PbxFile with updated data
+                pair.createSnapshotFromFile(file, fromFolder);
                 showPair(pair);
 
-            } else {
-                // needs to create a new PairFolder
-                pair = new ProtboxFile(parent, encodedName, realName, new Date(file.lastModified()), file.length());
-                parent.addFile(pair);
+            } catch (NoSuchElementException ex) {
 
+                // there are no deleted PbxFile, so create a new one
+                pair = new PbxFile(this, parent, encodedName, realName);
+
+                // links the just created PbxFile with this registry's entry hierarchy
+                parent.addFile(pair);
             }
 
-            entryToReturn = pair;
+            return pair;
         }
-
-        return entryToReturn;
     }
 
 
@@ -639,17 +665,17 @@ public final class ProtboxRegistry implements Serializable {
 
     // -- DELETE METHODS --
 
-    public void permanentDelete(ProtboxEntry entry) {
+    public void permanentDelete(PbxEntry entry) {
         entry.parentFolder().remove(entry);
         emptyData(entry);
     }
 
 
-    public void delete(Path filePath, Folder fromFolder) throws ProtException {
+    public void delete(Path filePath, FolderOption fromFolder) throws ProtException {
         if (Constants.verbose) logger.info("Deleting file " + filePath);
 
-        ProtboxFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
-        ProtboxEntry toDelete;
+        PbxFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
+        PbxEntry toDelete;
         toDelete = parent.goToFile(filePath.getFileName().toString());
         if (toDelete == null) {
             toDelete = parent.goToFolder(filePath.getFileName().toString());
@@ -661,22 +687,23 @@ public final class ProtboxRegistry implements Serializable {
     /**
      * Hides the file or folder, keeping it in the registry but deleting it from both PROT and SHARED folders.
      */
-    private void hidePair(ProtboxEntry entry) {
+    private void hidePair(PbxEntry entry) {
         if (entry.isHidden()) {
             return;
         }
 
-        if (entry instanceof ProtboxFolder) {
-            ProtboxFolder pairFolder = (ProtboxFolder) entry;
-            pairFolder.getSubFolders().forEach(this::hidePair);
-            pairFolder.getSubFiles().forEach(this::hidePair);
+        if (entry instanceof PbxFolder) {
+            PbxFolder folder = (PbxFolder) entry;
+            folder.getSubFolders().forEach(this::hidePair);
+            folder.getSubFiles().forEach(this::hidePair);
         }
 
         try {
             File fileAtProt = new File(pair.getProtFolderPath() + File.separator + entry.relativeRealPath());
             if (fileAtProt.exists()) {
-                if (entry instanceof ProtboxFile) {
-                    ((ProtboxFile) entry).setData(FileUtils.readFileToByteArray(fileAtProt));
+                if (entry instanceof PbxFile) {
+                    PbxFile file = (PbxFile) entry;
+                    file.createSnapshotFromFile(fileAtProt, FolderOption.PROT);
                 }
                 SKIP_WATCHER_ENTRIES.add(fileAtProt.getAbsolutePath());
                 SKIP_WATCHER_ENTRIES.add(fileAtProt.getParentFile().getAbsolutePath());
@@ -685,15 +712,16 @@ public final class ProtboxRegistry implements Serializable {
 
             File fileAtShared = new File(pair.getSharedFolderPath() + File.separator + entry.relativeEncodedPath());
             if (fileAtShared.exists()) {
-                if (entry instanceof ProtboxFile) {
-                    ((ProtboxFile) entry).setData(decrypt(FileUtils.readFileToByteArray(fileAtShared)));
+                if (entry instanceof PbxFile) {
+                    PbxFile file = (PbxFile) entry;
+                    file.createSnapshotFromFile(fileAtShared, FolderOption.SHARED);
                 }
                 SKIP_WATCHER_ENTRIES.add(fileAtShared.getAbsolutePath());
                 SKIP_WATCHER_ENTRIES.add(fileAtShared.getParentFile().getAbsolutePath());
                 Constants.delete(fileAtShared);
             }
 
-        } catch (IOException | GeneralSecurityException ex) {
+        } catch (ProtException ex) {
             if (Constants.verbose) {
                 logger.error("Error while hiding PReg pair " + entry.toString(), ex);
             }
@@ -704,9 +732,9 @@ public final class ProtboxRegistry implements Serializable {
 
 
     /**
-     * Shows the file or folder, reversing the delete project on both PROT and SHARED folders.
+     * Shows the file or folder, reversing the delete process on both PROT and SHARED folders.
      */
-    public void showPair(ProtboxEntry entry) {
+    public void showPair(PbxEntry entry) { // TODO HAVE AN INDEX
         if (!entry.isHidden()) {
             return;
         }
@@ -721,27 +749,27 @@ public final class ProtboxRegistry implements Serializable {
 
         try {
 
-            if (entry instanceof ProtboxFile) {
-                ProtboxFile pbxFile = (ProtboxFile) entry;
-                pbxFile.setLastModified(new Date(fileAtProt.lastModified()));
-                FileUtils.writeByteArrayToFile(fileAtProt, pbxFile.getData());
+            if (entry instanceof PbxFile) {
+                PbxFile pbxFile = (PbxFile) entry;
+                pbxFile.writeSnapshotToFile(0, fileAtProt, FolderOption.PROT);
+
                 TrayApplet.getInstance().baloon("File Restored",
-                        "The hidden file \"" + entry.realName() + "\" was restored to its original location.",
+                        "The file \"" + entry.realName() + "\" was restored to its original location.",
                         TrayIcon.MessageType.INFO);
                 emptyData(entry);
 
-            } else if (entry instanceof ProtboxFolder) {
+            } else if (entry instanceof PbxFolder) {
                 fileAtProt.mkdir();
                 TrayApplet.getInstance().baloon("Folder Restored",
-                        "The hidden folder \"" + entry.realName() + "\" was restored to its original location.",
+                        "The folder \"" + entry.realName() + "\" was restored to its original location.",
                         TrayIcon.MessageType.INFO);
             }
 
             SyncModule.toShared(this, entry);
 
-        } catch (IOException ex) {
+        } catch (ProtException ex) {
             if (Constants.verbose) {
-                logger.error("Error while showing PReg pair " + entry.toString(), ex);
+                logger.error("Error while writing file data for " + entry.toString(), ex);
             }
             entry.hidden = true;
             SKIP_WATCHER_ENTRIES.remove(fileAtProt.getAbsolutePath());
@@ -756,8 +784,8 @@ public final class ProtboxRegistry implements Serializable {
     }
 
 
-    private boolean build(final DefaultMutableTreeNode treeRoot, final ProtboxFolder root) {
-        final Ref.Single<Boolean> deletedFileWasAdded = Ref.of1(false);
+    private boolean build(final DefaultMutableTreeNode treeRoot, final PbxFolder root) {
+        final Single<Boolean> deletedFileWasAdded = new Single<>(false);
 
         root.getSubFolders().forEach(f -> {
             DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f, true);
@@ -854,7 +882,7 @@ public final class ProtboxRegistry implements Serializable {
 
             // 1) remove entries from the syncing threads
             protFolderWatcher.interrupt();
-            Ref.Duo<List<ProtboxEntry>> removedEntries = SyncModule.removeSyncPairsForReg(this);
+            Pair<List<PbxEntry>> removedEntries = SyncModule.removeSyncPairsForReg(this);
 
 
             // 2) set new path
@@ -869,15 +897,15 @@ public final class ProtboxRegistry implements Serializable {
 
 
             // 4) start new Watcher on the new Folder
-            protFolderWatcher = new Thread(new RegistryWatcher(this, Folder.PROT, newProtFile.toPath()));
+            protFolderWatcher = new Thread(new RegistryWatcher(this, FolderOption.PROT, newProtFile.toPath()));
             protFolderWatcher.start();
 
 
             // 5) add removed entries to the syncing threads again
-            for (ProtboxEntry e : removedEntries.first)
+            for (PbxEntry e : removedEntries.first)
                 SyncModule.toProt(this, e);
 
-            for (ProtboxEntry e : removedEntries.second)
+            for (PbxEntry e : removedEntries.second)
                 SyncModule.toShared(this, e);
 
             // 6) update the pair
@@ -890,11 +918,11 @@ public final class ProtboxRegistry implements Serializable {
     }
 
 
-    public void openExplorerFolder(Folder folderToOpen) throws IOException {
+    public void openExplorerFolder(FolderOption folderToOpen) throws IOException {
         String path = "";
-        if (folderToOpen.equals(Folder.SHARED))
+        if (folderToOpen.equals(FolderOption.SHARED))
             path = pair.getSharedFolderPath();
-        else if (folderToOpen.equals(Folder.PROT))
+        else if (folderToOpen.equals(FolderOption.PROT))
             path = pair.getProtFolderPath();
 
 
@@ -912,13 +940,23 @@ public final class ProtboxRegistry implements Serializable {
     }
 
 
-    public final ProtboxUser getUser() {
+    public final PbxUser getUser() {
         return user;
     }
 
 
-    public final ProtboxPair getPair() {
+    public final PbxPair getPair() {
         return pair;
+    }
+
+
+    public int getMaxDeletedSize() {
+        return maxDeletedSize;
+    }
+
+
+    public void setMaxDeletedSize(int maxDeletedSize) {
+        this.maxDeletedSize = maxDeletedSize;
     }
 
 
@@ -930,12 +968,12 @@ public final class ProtboxRegistry implements Serializable {
         } else if (this != o) {
             return false;
 
-        } else if (!(o instanceof ProtboxRegistry)) {
+        } else if (!(o instanceof PReg)) {
             return false;
 
         }
 
-        ProtboxRegistry d = (ProtboxRegistry) o;
+        PReg d = (PReg) o;
         return pair.equals(d.pair);
     }
 
@@ -949,15 +987,15 @@ public final class ProtboxRegistry implements Serializable {
         return print(sb, root, indent, indent).toString();
     }
 
-    private StringBuffer print(StringBuffer sb, ProtboxFolder root, String originalIndent, String indent) {
+    private StringBuffer print(StringBuffer sb, PbxFolder root, String originalIndent, String indent) {
 
-        for (ProtboxFile f : root.getSubFiles()) {
+        for (PbxFile f : root.getSubFiles()) {
             sb.append(indent);
             sb.append(f.realName());
             sb.append(" (file");
 
             if (f.isHidden()){
-                sb.append(", hidden)\n");
+                sb.append(", deleted)\n");
 
             } else {
                 sb.append(")\n");
@@ -965,7 +1003,7 @@ public final class ProtboxRegistry implements Serializable {
             }
         }
 
-        for (ProtboxFolder f : root.getSubFolders()) {
+        for (PbxFolder f : root.getSubFolders()) {
             if (f.parentFolder() != null) {
                 sb.append(indent);
                 sb.append(f.realName());

@@ -3,7 +3,7 @@ package edduarte.protbox.utils;
 /**
  * A simple asynchronous object callback that provides an easy bridge between
  * one class and another.
- *
+ * <p>
  * If one object T at class B is to be returned to a class A, then the class A
  * must send an implementation of the Callback interface into the class B so that
  * when B calls the Callback method with the object T, A will receive

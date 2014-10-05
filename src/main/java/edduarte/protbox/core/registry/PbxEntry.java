@@ -6,16 +6,21 @@ import java.io.Serializable;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public class ProtboxEntry implements Serializable {
+public abstract class PbxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final ProtboxFolder parentFolder;
+    protected final PReg parentRegistry;
+    private final PbxFolder parentFolder;
     private final String encodedName;
     private final String realName;
     boolean hidden;
-    
-    
-    ProtboxEntry(final ProtboxFolder parentFolder, final String encodedName, final String realName) {
+
+
+    PbxEntry(final PReg parentRegistry,
+             final PbxFolder parentFolder,
+             final String encodedName,
+             final String realName) {
+        this.parentRegistry = parentRegistry;
         this.parentFolder = parentFolder;
         this.encodedName = encodedName;
         this.realName = realName;
@@ -25,20 +30,20 @@ public class ProtboxEntry implements Serializable {
     /**
      * The parentFolder is a Folder Entry(PbxFolder).
      */
-    public ProtboxFolder parentFolder() {
+    public PbxFolder parentFolder() {
         return parentFolder;
     }
 
     /**
      * The encoded name is name used in the shared folder,
-     * which is obtained by encoding the realName in Base64
+     * which is obtained by encoding the real name in Base64.
      */
     public String encodedName() {
         return encodedName;
     }
 
     /**
-     * The realName is a the real name of the file.
+     * The real name of the entry, used in the Prot folder.
      */
     public String realName() {
         return realName;
@@ -58,7 +63,7 @@ public class ProtboxEntry implements Serializable {
 
     /**
      * Returns the relative path from the root to this file, constructed with the real names
-     * and including extensions (only available if this pair is a file).
+     * and including extensions (only available if this entry is a file).
      * This is used to reach the original file in the protbox/output folder
      */
     public String relativeRealPath() {
@@ -69,24 +74,24 @@ public class ProtboxEntry implements Serializable {
     }
 
     /**
-     * Returns if the pair is hidden or not. If this pair is hidden, it means that the
-     * file or folder represented by this pair is hidden from its native folders.
+     * Returns if the entry is hidden or not. If this entry is hidden, it means that the
+     * file or folder represented by this entry is hidden from its native folders.
      *
-     * @return <tt>true</tt> if this pair is hidden or <tt>false</tt> if it isn't
+     * @return <tt>true</tt> if this entry is hidden or <tt>false</tt> if it isn't
      */
     public boolean isHidden() {
         return hidden;
     }
 
-    
+
     public String toString() {
         return realName;
     }
 
-    
+
     @Override
     public boolean equals(Object obj) {
-        
+
         if (obj == null) {
             return false;
         }
@@ -95,10 +100,10 @@ public class ProtboxEntry implements Serializable {
             return true;
         }
 
-        if (obj instanceof ProtboxEntry) {
-            ProtboxEntry pe = (ProtboxEntry) obj;
+        if (obj instanceof PbxEntry) {
+            PbxEntry pe = (PbxEntry) obj;
             return this.relativeRealPath().equalsIgnoreCase(pe.relativeRealPath()) &&
-                   this.relativeEncodedPath().equalsIgnoreCase(pe.relativeEncodedPath());
+                    this.relativeEncodedPath().equalsIgnoreCase(pe.relativeEncodedPath());
         }
 
         return false;

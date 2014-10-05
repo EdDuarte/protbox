@@ -1,12 +1,15 @@
 package edduarte.protbox.ui.windows;
 
+import com.google.common.collect.Lists;
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.registry.*;
-import edduarte.protbox.core.registry.ProtboxEntry;
-import edduarte.protbox.core.registry.ProtboxFile;
+import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.registry.PbxEntry;
+import edduarte.protbox.core.registry.PbxFile;
+import edduarte.protbox.core.registry.PbxFolder;
 import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
+import org.apache.commons.lang3.SystemUtils;
 import org.jdesktop.swingx.border.DropShadowBorder;
 import org.jdesktop.xswingx.PromptSupport;
 import org.slf4j.Logger;
@@ -19,7 +22,9 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeNode;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -32,9 +37,9 @@ import java.util.regex.Pattern;
 public class RestoreFileWindow extends JDialog {
     private static final Logger logger = LoggerFactory.getLogger(RestoreFileWindow.class);
 
-    private static final Map<ProtboxRegistry, RestoreFileWindow> instances = new HashMap<>();
+    private static final Map<PReg, RestoreFileWindow> instances = new HashMap<>();
 
-    private RestoreFileWindow(final ProtboxRegistry registry) {
+    private RestoreFileWindow(final PReg registry) {
         super();
         setLayout(null);
 
@@ -44,17 +49,47 @@ public class RestoreFileWindow extends JDialog {
         PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, field);
         field.setBounds(2, 2, 301, 26);
         field.setBorder(new LineBorder(Color.lightGray));
-        field.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        field.setFont(Constants.FONT);
         add(field);
 
 
-        final JLabel noDeleted = new JLabel("<html><b>No deleted files were found!</b><br><br>" +
+        final JLabel noDeleted = new JLabel("<html>No deleted files were found!<br><br>" +
                 "<font color=\"gray\">If you think some file from the registry was<br>" +
-                "deleted and it's not here, contact us at<br>" +
-                "<a href=\"#\">www.protbox.com/support</a></font></html>");
+                "deleted and it's not here, please create an issue here:<br>" +
+                "<a href=\"#\">https://github.com/edduarte/protbox/issues</a></font></html>");
         noDeleted.setLayout(null);
         noDeleted.setBounds(20, 50, 300, 300);
-        noDeleted.setFont(new Font(Constants.FONT, Font.PLAIN, 15));
+        noDeleted.setFont(Constants.FONT.deriveFont(14f));
+        noDeleted.addMouseListener((OnMouseClick) e -> {
+            String urlPath = "https://github.com/edduarte/protbox/issues";
+
+            try {
+
+                if (Desktop.isDesktopSupported()) {
+                    Desktop.getDesktop().browse(new URI(urlPath));
+
+                } else {
+                    if (SystemUtils.IS_OS_WINDOWS) {
+                        Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler " + urlPath);
+
+                    } else {
+                        java.util.List<String> browsers =
+                                Lists.newArrayList("firefox", "opera", "safari", "mozilla", "chrome");
+
+                        for (String browser : browsers) {
+                            if (Runtime.getRuntime().exec(new String[]{"which", browser}).waitFor() == 0) {
+
+                                Runtime.getRuntime().exec(new String[]{browser, urlPath});
+                                break;
+                            }
+                        }
+                    }
+                }
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
 
 
         DefaultMutableTreeNode rootTreeNode = registry.buildDeletedTree();
@@ -87,7 +122,7 @@ public class RestoreFileWindow extends JDialog {
         JLabel close = new JLabel(new ImageIcon(Constants.getAsset("close.png")));
         close.setLayout(null);
         close.setBounds(312, 7, 18, 18);
-        close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        close.setFont(Constants.FONT);
         close.setForeground(Color.gray);
         close.addMouseListener((OnMouseClick) e -> dispose());
         add(close);
@@ -101,7 +136,7 @@ public class RestoreFileWindow extends JDialog {
         permanent.addMouseListener((OnMouseClick) e -> {
             if (permanent.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                ProtboxEntry entry = (ProtboxEntry) node.getUserObject();
+                PbxEntry entry = (PbxEntry) node.getUserObject();
 
                 registry.permanentDelete(entry);
                 dispose();
@@ -119,7 +154,7 @@ public class RestoreFileWindow extends JDialog {
         action.addMouseListener((OnMouseClick) e -> {
             if (action.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
-                ProtboxEntry entry = (ProtboxEntry) node.getUserObject();
+                PbxEntry entry = (PbxEntry) node.getUserObject();
                 registry.showPair(entry);
                 dispose();
             }
@@ -130,7 +165,7 @@ public class RestoreFileWindow extends JDialog {
         tree.addMouseListener((OnMouseClick) e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null) {
-                ProtboxEntry entry = (ProtboxEntry) node.getUserObject();
+                PbxEntry entry = (PbxEntry) node.getUserObject();
                 if (entry.isHidden()) {
                     permanent.setEnabled(true);
                     action.setEnabled(true);
@@ -175,15 +210,16 @@ public class RestoreFileWindow extends JDialog {
     }
 
 
-    public static RestoreFileWindow getInstance(final ProtboxRegistry registry) {
-        RestoreFileWindow newInstance = instances.get(registry);
-        if (newInstance == null) {
-            newInstance = new RestoreFileWindow(registry);
-            instances.put(registry, newInstance);
-        } else {
-            newInstance.setVisible(true);
-            newInstance.toFront();
-        }
+    public static RestoreFileWindow getInstance(final PReg registry) {
+        RestoreFileWindow newInstance;
+//                = instances.get(registry);
+//        if (newInstance == null) {
+        newInstance = new RestoreFileWindow(registry);
+//            instances.put(registry, newInstance);
+//        } else {
+        newInstance.setVisible(true);
+        newInstance.toFront();
+//        }
         return newInstance;
     }
 
@@ -219,18 +255,18 @@ public class RestoreFileWindow extends JDialog {
             tree.setRowHeight(32);
 
             // rendering font and ASSETS
-            ProtboxEntry entry = (ProtboxEntry) ((DefaultMutableTreeNode) value).getUserObject();
-            setFont(new Font(Constants.FONT, Font.PLAIN, 13));
+            PbxEntry entry = (PbxEntry) ((DefaultMutableTreeNode) value).getUserObject();
+            setFont(Constants.FONT.deriveFont(13f));
 
 
-            if (entry instanceof ProtboxFile) {
+            if (entry instanceof PbxFile) {
                 if (entry.isHidden()) {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of deleted file
                     setForeground(Color.gray);
                 } else {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of normal file
                 }
-            } else if (entry instanceof ProtboxFolder) {
+            } else if (entry instanceof PbxFolder) {
                 if (entry.isHidden()) {
                     setIcon(new ImageIcon(Constants.getAsset("folder.png"))); // image of deleted file
                     setForeground(Color.gray);

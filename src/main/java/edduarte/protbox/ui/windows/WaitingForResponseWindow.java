@@ -24,11 +24,11 @@ public class WaitingForResponseWindow extends JFrame {
 
         JLabel title = new JLabel("Waiting for user's response...");
         title.setBounds(10, 1, 250, 50);
-        title.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        title.setFont(Constants.FONT);
         this.add(title);
         final JLabel timer = new JLabel();
         timer.setBounds(10, 22, 250, 50);
-        timer.setFont(new Font(Constants.FONT, Font.PLAIN, 13));
+        timer.setFont(Constants.FONT);
         this.add(timer);
 
         this.setSize(270, 70);

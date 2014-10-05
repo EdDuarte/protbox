@@ -6,10 +6,13 @@ import org.apache.commons.io.FileUtils;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
@@ -21,24 +24,32 @@ import java.util.*;
 public final class Constants {
 
 
-    public static boolean verbose = false;
-
-
     public static final char SPECIAL_FILE_FIRST_CHAR = '_';
-
-
     public static final String SPECIAL_FILE_ASK_PREFIX = SPECIAL_FILE_FIRST_CHAR + "ask";
-
-
     public static final String SPECIAL_FILE_INVALID_PREFIX = SPECIAL_FILE_FIRST_CHAR + "invalid";
-
-
     public static final String SPECIAL_FILE_KEY_PREFIX = SPECIAL_FILE_FIRST_CHAR + "";
+    public static final Font FONT;
 
+    static {
+        Font loadedFont = null;
+        try {
 
-    public static final String FONT = "Helvetica";
+            InputStream fontStream = Main.class.getResourceAsStream("HelveticaNeue.otf");
 
+            // create the font to use
+            loadedFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(12f);
 
+            // register the font
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(loadedFont);
+
+        } catch (IOException | FontFormatException ex) {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+
+        FONT = loadedFont;
+    }
     public static final String INSTALL_DIR = new File(
             Constants.class.getProtectionDomain()
                     .getCodeSource()
@@ -48,42 +59,40 @@ public final class Constants {
             .getParentFile()
             .getAbsolutePath()
             .replaceAll("%20", " ");
-
-
     public static final String PROVIDERS_DIR = new File(INSTALL_DIR, "providers").getAbsolutePath();
-
-
     public static final String REGISTRIES_DIR = new File(INSTALL_DIR, "registries").getAbsolutePath();
-
-
+    /**
+     * Returns the standard Date format to be used in this application.
+     */
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy");
+    private static final Map<String, BufferedImage> cachedAssets = new HashMap<>();
     private static final FileDeleteStrategy deleter = FileDeleteStrategy.FORCE;
+    public static boolean verbose = false;
 
-
-    private static final Map<String, BufferedImage> ASSETS = new HashMap<>();
-
+    public static String formatDate(Date date) {
+        return DATE_FORMAT.format(date);
+    }
 
     public static BufferedImage getAsset(String resourceFileName) {
-        BufferedImage result = ASSETS.get(resourceFileName);
+        BufferedImage result = cachedAssets.get(resourceFileName);
 
         if (result == null) {
             try {
                 InputStream stream = Main.class.getResourceAsStream("assets" + File.separator + resourceFileName);
                 result = ImageIO.read(stream);
-                ASSETS.put(resourceFileName, result);
+                cachedAssets.put(resourceFileName, result);
 
-            } catch (IOException | IllegalArgumentException e) {
+            } catch (IOException | IllegalArgumentException ex) {
+                ex.printStackTrace();
                 JOptionPane.showMessageDialog(null,
                         "Asset file " + resourceFileName + " not detected or corrupted!\nPlease reinstall the application.",
                         "Nonexistent or corrupted asset file",
                         JOptionPane.ERROR_MESSAGE);
-                e.printStackTrace();
                 System.exit(1);
             }
         }
-
         return result;
     }
-
 
     public static void delete(File fileToDelete) {
 
@@ -91,7 +100,7 @@ public final class Constants {
             return;
         }
 
-        else if (!fileToDelete.exists()) {
+        if (!fileToDelete.exists()) {
             return;
         }
 

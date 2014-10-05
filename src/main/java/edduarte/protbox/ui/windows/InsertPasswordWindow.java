@@ -31,13 +31,13 @@ public class InsertPasswordWindow extends JFrame {
 
         JLabel info = new JLabel();
         info.setText("Insert a password for your saved directories:");
-        info.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        info.setFont(Constants.FONT);
         info.setBounds(20, 5, 250, 30);
         add(info);
 
         field = new JPasswordField(6);
         field.setDocument(new LimitedFieldDocument(6));
-        field.setFont(new Font(Constants.FONT, Font.PLAIN, 16));
+        field.setFont(Constants.FONT.deriveFont(16f));
         field.setBounds(20, 34, 80, 30);
         field.addKeyListener((OnKeyReleased) e -> {
             if (e.getKeyCode() == KeyEvent.VK_ENTER)
@@ -58,7 +58,8 @@ public class InsertPasswordWindow extends JFrame {
         cancel.setBackground(Color.black);
         cancel.addMouseListener((OnMouseClick) e -> {
             if (JOptionPane.showConfirmDialog(
-                    InsertPasswordWindow.this, "You will need to insert a password to be used on saved directories in order to use this application!\n" +
+                    InsertPasswordWindow.this, "You will need to insert a password to be used on saved " +
+                            "directories in order to use this application!\n" +
                             "Are you sure you want to cancel and quit the application?\n\n",
                     "Confirm quit application",
                     JOptionPane.YES_NO_OPTION,

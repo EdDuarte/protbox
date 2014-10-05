@@ -1,8 +1,8 @@
 package edduarte.protbox.ui.panels;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.Folder;
-import edduarte.protbox.core.registry.ProtboxRegistry;
+import edduarte.protbox.core.FolderOption;
+import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.ui.windows.ConfigurationWindow;
 import edduarte.protbox.ui.windows.RestoreFileWindow;
 
@@ -22,9 +22,9 @@ import java.io.IOException;
 public class PairPanel extends JLabel {
 
     private final JLabel revertButton, configButton;
-    private final ProtboxRegistry reg;
+    private final PReg reg;
 
-    public PairPanel(final ProtboxRegistry reg) {
+    public PairPanel(final PReg reg) {
         this.reg = reg;
         setLayout(null);
         setBorder(new MatteBorder(0, 0, 1, 0, new Color(230, 230, 230)));
@@ -37,7 +37,7 @@ public class PairPanel extends JLabel {
 
         JLabel label = new JLabel(reg.getPair().getSharedFolderFile().getName());
         label.setBounds(50, 12, 100, 28);
-        label.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        label.setFont(Constants.FONT);
         add(label);
 
         revertButton = new JLabel(new ImageIcon(Constants.getAsset("trash.png")));
@@ -60,11 +60,11 @@ public class PairPanel extends JLabel {
         final JPopupMenu menu = new JPopupMenu();
 
         JMenuItem openDrop = new JMenuItem("Open shared folder...");
-        openDrop.addActionListener(new OpenFolderListener(Folder.SHARED));
+        openDrop.addActionListener(new OpenFolderListener(FolderOption.SHARED));
         menu.add(openDrop);
 
         JMenuItem openProt = new JMenuItem("Open prot folder...");
-        openProt.addActionListener(new OpenFolderListener(Folder.PROT));
+        openProt.addActionListener(new OpenFolderListener(FolderOption.PROT));
         menu.add(openProt);
 
         addMouseListener(new MouseAdapter() {
@@ -86,7 +86,7 @@ public class PairPanel extends JLabel {
         });
 
         addMouseListener(new CellMouseClickListener());
-        addMouseListener(new OpenFolderListener(Folder.PROT));
+        addMouseListener(new OpenFolderListener(FolderOption.PROT));
 
         setMinimumSize(new Dimension(0, 50));
         setPreferredSize(new Dimension(0, 50));
@@ -109,7 +109,7 @@ public class PairPanel extends JLabel {
     }
 
 
-    public ProtboxRegistry getRegistry() {
+    public PReg getRegistry() {
         return reg;
     }
 
@@ -130,9 +130,9 @@ public class PairPanel extends JLabel {
 
     private class OpenFolderListener extends MouseAdapter implements ActionListener {
 
-        private Folder folderToOpen;
+        private FolderOption folderToOpen;
 
-        private OpenFolderListener(Folder folderToOpen) {
+        private OpenFolderListener(FolderOption folderToOpen) {
             this.folderToOpen = folderToOpen;
         }
 

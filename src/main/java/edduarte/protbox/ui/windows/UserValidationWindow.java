@@ -1,11 +1,12 @@
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.ProtboxUser;
-import edduarte.protbox.core.registry.ProtboxRegistry;
+import edduarte.protbox.core.PbxUser;
+import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.utils.Ref;
 import edduarte.protbox.utils.Utils;
+import edduarte.protbox.utils.dataholders.Double;
+import edduarte.protbox.utils.dataholders.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public class UserValidationWindow extends JFrame {
 
     private static final Logger logger = LoggerFactory.getLogger(UserValidationWindow.class);
 
-    private static final Map<ProtboxRegistry, UserValidationWindow> instances = new HashMap<>();
+    private static final Map<PReg, UserValidationWindow> instances = new HashMap<>();
 
     private UserValidationWindow(final String registryAlgorithm, final SecretKey registryKey,
                                  final String sharedFolderName, final File askFile) {
@@ -42,9 +43,9 @@ public class UserValidationWindow extends JFrame {
 
         final File parent = askFile.getParentFile();
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(askFile))) {
-            final Ref.Triple<ProtboxUser, byte[], byte[]> receivedFileData = (Ref.Triple<ProtboxUser, byte[], byte[]>) in.readObject();
+            final Triple<PbxUser, byte[], byte[]> receivedFileData = (Triple<PbxUser, byte[], byte[]>) in.readObject();
             Constants.delete(askFile);
-            final ProtboxUser newUser = receivedFileData.first;
+            final PbxUser newUser = receivedFileData.first;
             final byte[] encodedPublicKey = receivedFileData.second;
             final byte[] signature = receivedFileData.third;
 
@@ -91,13 +92,13 @@ public class UserValidationWindow extends JFrame {
             info.setText(newUser.toString());
             info.setBounds(20, 20, 430, 135);
             info.setIconTextGap(JLabel.RIGHT);
-            info.setFont(new Font(Constants.FONT, Font.PLAIN, 14));
+            info.setFont(Constants.FONT.deriveFont(14f));
             add(info);
 
 
             JLabel machineName = new JLabel();
             machineName.setText("Machine Name: " + newUser.getMachineName());
-            machineName.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+            machineName.setFont(Constants.FONT);
             machineName.setBounds(125, 100, 370, 50);
             add(machineName);
 
@@ -144,7 +145,7 @@ public class UserValidationWindow extends JFrame {
         }
     }
 
-    public static UserValidationWindow getInstance(final ProtboxRegistry registry, final File askFile) {
+    public static UserValidationWindow getInstance(final PReg registry, final File askFile) {
         String algorithm = registry.getPair().getPairAlgorithm();
         SecretKey key = registry.getPair().getPairKey();
         String sharedFolderName = registry.getPair().getSharedFolderFile().getName();
@@ -160,7 +161,7 @@ public class UserValidationWindow extends JFrame {
         return newInstance;
     }
 
-    private void generateKeyFile(File parent, ProtboxUser newUser, String algorithm, SecretKey directoryKey, byte[] encodedPublicKey) {
+    private void generateKeyFile(File parent, PbxUser newUser, String algorithm, SecretKey directoryKey, byte[] encodedPublicKey) {
         try {
 
             // GENERATE SIGNED PUBLIC KEY FROM ENCODED BYTES
@@ -177,7 +178,7 @@ public class UserValidationWindow extends JFrame {
             // SAVE DIRECTORY'S ALGORITHM AND ENCRYPTED KEY IN FILE
             File keyFile = new File(parent, "»key" + newUser.getId());
             try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(keyFile))) {
-                out.writeObject(Ref.of1(algorithm, encodedKey));
+                out.writeObject(new Double<>(algorithm, encodedKey));
             }
 
             dispose();
@@ -187,7 +188,7 @@ public class UserValidationWindow extends JFrame {
         }
     }
 
-    private void generateInvalidFile(File parent, ProtboxUser newUser) {
+    private void generateInvalidFile(File parent, PbxUser newUser) {
         try {
             File invalidFile = new File(parent, "»invalid" + newUser.getId());
             invalidFile.createNewFile();

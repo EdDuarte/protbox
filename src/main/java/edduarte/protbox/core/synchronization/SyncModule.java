@@ -1,20 +1,19 @@
 package edduarte.protbox.core.synchronization;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.Folder;
-import edduarte.protbox.core.registry.*;
+import edduarte.protbox.core.FolderOption;
+import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.registry.PbxEntry;
+import edduarte.protbox.core.registry.PbxFile;
+import edduarte.protbox.core.registry.PbxFolder;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.utils.Ref;
-import org.apache.commons.io.FileUtils;
+import edduarte.protbox.utils.dataholders.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
@@ -65,30 +64,34 @@ public final class SyncModule {
     }
 
 
-    public static void toProt(final ProtboxRegistry reg, final ProtboxEntry newEntry) {
+    public static void toProt(final PReg reg, final PbxEntry newEntry) {
         // check if toShared queue has the same corresponding pair (incoming conflict synchronization)
         if (!findConflict(reg, newEntry, toShared))
             toProt.add(new SyncEntry(reg, newEntry));
     }
 
 
-    public static void toShared(final ProtboxRegistry directory, final ProtboxEntry newEntry) {
+    public static void toShared(final PReg directory, final PbxEntry newEntry) {
         // check if toProt queue has the same corresponding pair (incoming conflict synchronization)
         if (!findConflict(directory, newEntry, toProt))
             toShared.add(new SyncEntry(directory, newEntry));
     }
 
 
-    private static boolean findConflict(final ProtboxRegistry reg, final ProtboxEntry newEntry, Queue<SyncEntry> queueToCheck) {
+    private static boolean findConflict(final PReg reg,
+                                        final PbxEntry newEntry,
+                                        final Queue<SyncEntry> queueToCheck) {
+
         for (SyncEntry e : queueToCheck) {
             if (e.entry.equals(newEntry)) {
                 try {
 
                     // removes it from that queue
                     queueToCheck.remove(e);
-                    File protFile = new File(reg.getPair().getProtFolderPath() + File.separator + newEntry.relativeRealPath());
+                    File protFile = new File(reg.getPair().getProtFolderPath() +
+                            File.separator + newEntry.relativeRealPath());
 
-                    reg.addConflicted(protFile, Folder.PROT);
+                    reg.addConflicted(protFile, FolderOption.PROT);
                     SyncModule.toProt(reg, newEntry);
 
                     return true;
@@ -105,9 +108,9 @@ public final class SyncModule {
     }
 
 
-    public static Ref.Duo<List<ProtboxEntry>> removeSyncPairsForReg(final ProtboxRegistry reg) {
-        List<ProtboxEntry> toProtRemoved = new ArrayList<>();
-        List<ProtboxEntry> toSharedRemoved = new ArrayList<>();
+    public static Pair<List<PbxEntry>> removeSyncPairsForReg(final PReg reg) {
+        List<PbxEntry> toProtRemoved = new ArrayList<>();
+        List<PbxEntry> toSharedRemoved = new ArrayList<>();
 
         toProt.stream()
                 .filter(e -> e.reg.equals(reg))
@@ -124,32 +127,36 @@ public final class SyncModule {
                 });
 
         if (Constants.verbose) {
-            logger.info("Removed entries of registry " + reg.ID);
+            logger.info("Removed entries of registry " + reg.id);
         }
 
-        return Ref.of1(toProtRemoved, toSharedRemoved);
+        return new Pair<>(toProtRemoved, toSharedRemoved);
     }
 
 
-    private static void writeAonB(final ProtboxRegistry directory, final ProtboxFile entry, final Folder folderOfA, final File a, final File b) {
+    private static void writeAonB(final PbxFile entry, final FolderOption folderOfA, final File a, final File b) {
         new Thread() {
             @Override
             public void run() {
                 try {
-                    byte[] data = FileUtils.readFileToByteArray(a);
-                    if (folderOfA.equals(Folder.SHARED))
-                        data = directory.decrypt(data);
-                    else if (folderOfA.equals(Folder.PROT))
-                        data = directory.encrypt(data);
+//                    byte[] data = FileUtils.readFileToByteArray(a);
+//                    if (folderOfA.equals(FolderOption.SHARED))
+//                        data = directory.decrypt(data);
+//                    else if (folderOfA.equals(FolderOption.PROT))
+//                        data = directory.encrypt(data);
+//
+//                    FileUtils.writeByteArrayToFile(b, data);
+//                    long newLM = a.lastModified();
+//                    entry.setLastModified(new Date(newLM));
+//                    b.setLastModified(newLM);
 
-                    FileUtils.writeByteArrayToFile(b, data);
-                    long newLM = a.lastModified();
-                    entry.setLastModified(new Date(newLM));
-                    b.setLastModified(newLM);
+                    entry.createSnapshotFromFile(a, folderOfA);
+                    entry.writeSnapshotToFile(0, b, folderOfA.inverse());
 
-                } catch (IOException|GeneralSecurityException ex) {
+                } catch (ProtException ex) {
                     if (Constants.verbose) {
-                        logger.error("Error while syncing file " + a.getName() + " from " + folderOfA.name().toLowerCase() + " folder.", ex);
+                        logger.error("Error while syncing file " + a.getName() +
+                                " from " + folderOfA.name().toLowerCase() + " folder.", ex);
                     }
                 }
             }
@@ -166,21 +173,24 @@ public final class SyncModule {
 
                 if (!toProt.isEmpty()) {
                     statusOK = false;
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toProt.size() + toShared.size()) + " files");
+                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING,
+                            Integer.toString(toProt.size() + toShared.size()) + " files");
                 }
 
                 while (!toProt.isEmpty()) {
                     SyncEntry polled = toProt.poll();
-                    ProtboxRegistry reg = polled.reg;
-                    ProtboxEntry entryToSync = polled.entry;
+                    PReg reg = polled.reg;
+                    PbxEntry entryToSync = polled.entry;
 
-                    File sharedFile = new File(reg.getPair().getSharedFolderPath() + File.separator + entryToSync.relativeEncodedPath());
-                    File protFile = new File(reg.getPair().getProtFolderPath() + File.separator + entryToSync.relativeRealPath());
+                    File sharedFile = new File(reg.getPair().getSharedFolderPath() +
+                            File.separator + entryToSync.relativeEncodedPath());
+                    File protFile = new File(reg.getPair().getProtFolderPath() +
+                            File.separator + entryToSync.relativeRealPath());
 
                     reg.SKIP_WATCHER_ENTRIES.add(protFile.getAbsolutePath());
-                    if (entryToSync instanceof ProtboxFile)
-                        writeAonB(reg, ((ProtboxFile) entryToSync), Folder.SHARED, sharedFile, protFile);
-                    else if (entryToSync instanceof ProtboxFolder) {
+                    if (entryToSync instanceof PbxFile)
+                        writeAonB(((PbxFile) entryToSync), FolderOption.SHARED, sharedFile, protFile);
+                    else if (entryToSync instanceof PbxFolder) {
                         protFile.mkdir();
                     }
                 }
@@ -207,21 +217,24 @@ public final class SyncModule {
 
                 if (!toProt.isEmpty()) {
                     statusOK = false;
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING, Integer.toString(toProt.size() + toShared.size()) + " files");
+                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING,
+                            Integer.toString(toProt.size() + toShared.size()) + " files");
                 }
 
                 while (!toShared.isEmpty()) {
                     SyncEntry polled = toShared.poll();
-                    ProtboxRegistry reg = polled.reg;
-                    ProtboxEntry entryToSync = polled.entry;
+                    PReg reg = polled.reg;
+                    PbxEntry entryToSync = polled.entry;
 
-                    File protFile = new File(reg.getPair().getProtFolderPath() + File.separator + entryToSync.relativeRealPath());
-                    File sharedFile = new File(reg.getPair().getSharedFolderPath() + File.separator + entryToSync.relativeEncodedPath());
+                    File protFile = new File(reg.getPair().getProtFolderPath() +
+                            File.separator + entryToSync.relativeRealPath());
+                    File sharedFile = new File(reg.getPair().getSharedFolderPath() +
+                            File.separator + entryToSync.relativeEncodedPath());
 
                     reg.SKIP_WATCHER_ENTRIES.add(sharedFile.getAbsolutePath());
-                    if (entryToSync instanceof ProtboxFile)
-                        writeAonB(reg, ((ProtboxFile) entryToSync), Folder.PROT, protFile, sharedFile);
-                    else if (entryToSync instanceof ProtboxFolder) {
+                    if (entryToSync instanceof PbxFile)
+                        writeAonB(((PbxFile) entryToSync), FolderOption.PROT, protFile, sharedFile);
+                    else if (entryToSync instanceof PbxFolder) {
                         sharedFile.mkdir();
                     }
 

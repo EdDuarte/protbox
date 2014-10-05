@@ -1,8 +1,8 @@
 package edduarte.protbox.core.watcher;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.Folder;
-import edduarte.protbox.core.registry.ProtboxRegistry;
+import edduarte.protbox.core.FolderOption;
+import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.exception.ProtException;
 import org.slf4j.LoggerFactory;
 
@@ -18,13 +18,13 @@ import java.util.Collections;
  */
 public final class RegistryWatcher implements Runnable {
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(RegistryWatcher.class);
-    private ProtboxRegistry reg;
-    private Folder fromFolder;
+    private PReg reg;
+    private FolderOption fromFolder;
     private Path root;
     private WatchService watchService = FileSystems.getDefault().newWatchService();
 
 
-    public RegistryWatcher(ProtboxRegistry reg, Folder fromFolder, Path root) throws IOException {
+    public RegistryWatcher(PReg reg, FolderOption fromFolder, Path root) throws IOException {
         this.reg = reg;
         this.fromFolder = fromFolder;
         this.root = root;
@@ -52,7 +52,7 @@ public final class RegistryWatcher implements Runnable {
         try {
             run_aux();
         } catch (ProtException | IOException ex) {
-            logger.error("Error while watching the PReg "+ reg.ID+".", ex);
+            logger.error("Error while watching the PReg " + reg.id + ".", ex);
             run();
         }
     }
@@ -73,7 +73,7 @@ public final class RegistryWatcher implements Runnable {
 
                         // if file exists at directories SKIP_ENTRIES list, ignore the file,
                         // since it was already added or altered by the application itself
-                        if ((relativePath.getFileName().toString().contains("»") && fromFolder.equals(Folder.SHARED))
+                        if ((relativePath.getFileName().toString().contains("»") && fromFolder.equals(FolderOption.SHARED))
                                 || relativePath.toFile().getName().equalsIgnoreCase("»==")) {
                             // IGNORE THESE FILES AT ALL COST !!!
                             logger.info("detected " + relativePath + " and not doing anything about it");
@@ -85,7 +85,7 @@ public final class RegistryWatcher implements Runnable {
                                     reg.SKIP_WATCHER_ENTRIES.removeAll(Collections.singleton(absolutePath));
                                 } else {
                                     if (Constants.verbose)
-                                        logger.info("DirectoryWatch[" + reg.ID + "|" + fromFolder.name() + "]: ADDED " + absolutePath);
+                                        logger.info("DirectoryWatch[" + reg.id + "|" + fromFolder.name() + "]: ADDED " + absolutePath);
 
                                     if (path.toFile().isDirectory()) {
                                         watchFolder(path);
@@ -97,7 +97,7 @@ public final class RegistryWatcher implements Runnable {
                                     reg.SKIP_WATCHER_ENTRIES.removeAll(Collections.singleton(absolutePath));
                                 } else {
                                     if (Constants.verbose)
-                                        logger.info("DirectoryWatch[" + reg.ID + "|" + fromFolder.name() + "]: DELETED " + absolutePath);
+                                        logger.info("DirectoryWatch[" + reg.id + "|" + fromFolder.name() + "]: DELETED " + absolutePath);
                                     reg.delete(path, fromFolder);
                                 }
                             }

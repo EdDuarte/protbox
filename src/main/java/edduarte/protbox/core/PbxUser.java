@@ -8,7 +8,7 @@ import java.security.cert.X509Certificate;
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
  */
-public class ProtboxUser implements Serializable {
+public class PbxUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -20,12 +20,12 @@ public class ProtboxUser implements Serializable {
     private final String machineSerialNo;
 
 
-    public ProtboxUser(Certificate[] certificateChain,
-                       X509Certificate userCertificate,
-                       String ccNumber,
-                       String userName,
-                       String machineName,
-                       String machineSerialNo) {
+    public PbxUser(Certificate[] certificateChain,
+                   X509Certificate userCertificate,
+                   String ccNumber,
+                   String userName,
+                   String machineName,
+                   String machineSerialNo) {
         this.certificateChain = certificateChain;
         this.userCertificate = userCertificate;
         this.ccNumber = ccNumber;
@@ -62,10 +62,10 @@ public class ProtboxUser implements Serializable {
 
     @Override
     public boolean equals(Object obj) {
-        if (!(obj instanceof ProtboxUser))
+        if (!(obj instanceof PbxUser))
             return false;
 
-        ProtboxUser other = (ProtboxUser) obj;
+        PbxUser other = (PbxUser) obj;
         return this.getId().equalsIgnoreCase(other.getId()) &&
                 this.getName().equalsIgnoreCase(other.getName()) &&
                 this.getUserCertificate().equals(other.getUserCertificate()) &&

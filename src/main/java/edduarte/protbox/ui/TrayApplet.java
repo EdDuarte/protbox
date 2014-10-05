@@ -3,6 +3,7 @@ package edduarte.protbox.ui;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.synchronization.SyncModule;
 import edduarte.protbox.ui.listeners.OnMouseClick;
+import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.ui.windows.NewRegistryWindow;
 import org.jdesktop.swingx.VerticalLayout;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -21,10 +23,12 @@ import java.util.ArrayList;
 public class TrayApplet extends JDialog {
 
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(TrayApplet.class);
+
     private static TrayApplet instance;
+
     public final TrayIcon trayIcon;
-    public final JPanel instanceList;
-    private JLabel statusText;
+    private final JPanel instanceList;
+    private final JLabel statusText;
 
     private TrayApplet() {
         super();
@@ -43,7 +47,7 @@ public class TrayApplet extends JDialog {
 
         statusText.setLayout(null);
         statusText.setBounds(10, 5, 240, 30);
-        statusText.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        statusText.setFont(Constants.FONT);
         statusText.setForeground(Color.DARK_GRAY);
         this.add(statusText);
 
@@ -51,7 +55,7 @@ public class TrayApplet extends JDialog {
         JLabel close = new JLabel("Exit Application");
         close.setLayout(null);
         close.setBounds(195, 219, 100, 30);
-        close.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        close.setFont(Constants.FONT);
         close.setForeground(Color.gray);
         close.addMouseListener((OnMouseClick) e -> {
             SyncModule.stop();
@@ -63,7 +67,7 @@ public class TrayApplet extends JDialog {
         instanceList = new JPanel();
         instanceList.setLayout(new VerticalLayout());
         instanceList.setMinimumSize(new Dimension(310, 200));
-        instanceList.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        instanceList.setFont(Constants.FONT);
         instanceList.setForeground(Color.black);
         instanceList.setBackground(Color.white);
         instanceList.setOpaque(true);
@@ -80,7 +84,7 @@ public class TrayApplet extends JDialog {
         JLabel addFolder = new JLabel("Monitor folder...");
         addFolder.setLayout(null);
         addFolder.setBounds(30, 219, 150, 30);
-        addFolder.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
+        addFolder.setFont(Constants.FONT);
         addFolder.setForeground(Color.gray);
         addFolder.setIcon(new ImageIcon(Constants.getAsset("add.png")));
         addFolder.addMouseListener((OnMouseClick) e -> NewRegistryWindow.start(false));
@@ -128,11 +132,35 @@ public class TrayApplet extends JDialog {
     public static TrayApplet getInstance() {
         if (instance == null) {
             instance = new TrayApplet();
-        } else {
-            instance.setVisible(true);
-            instance.toFront();
+//        } else {
+//            instance.setVisible(true);
+//            instance.toFront();
         }
         return instance;
+    }
+
+    public PairPanel[] getPairPanels() {
+        return Arrays.asList(instanceList.getComponents())
+                .stream()
+                .filter(comp -> comp.getClass() == PairPanel.class)
+                .toArray(PairPanel[]::new);
+    }
+
+    public void addPairPanel(PairPanel pairPanel) {
+        instanceList.add(pairPanel);
+        repaint();
+    }
+
+    public void removePairPanel(PairPanel pairPanel) {
+        instanceList.remove(pairPanel);
+        repaint();
+    }
+
+    @Override
+    public void repaint() {
+        super.repaint();
+        instanceList.revalidate();
+        instanceList.repaint();
     }
 
     public void status(TrayStatus status, String extraInfo) {
@@ -143,6 +171,7 @@ public class TrayApplet extends JDialog {
         trayIcon.setToolTip("Protbox 1.031\n" + msg);
         statusText.setText(msg);
     }
+
 
     public void baloon(String caption, String msg, TrayIcon.MessageType type) {
         trayIcon.displayMessage(caption, msg, type);

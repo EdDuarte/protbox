@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.text.DecimalFormat;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.UUID;
@@ -20,14 +21,13 @@ public final class Utils {
 
     private static final String WINDOWS_KEY = "SerialNumber";
     private static final String UNIX_KEY = "Serial Number:";
-    private static String sn = null;
-
     private static final String SERIAL_ERROR_MESSAGE = "Could not obtain the current machine's serial number.";
-
-    private static MessageDigest md;
     private static final Random random = new Random();
+    private static String sn = null;
+    private static MessageDigest md;
 
-    private Utils() {}
+    private Utils() {
+    }
 
     public static String getSerialNumber() {
         if (sn != null) {
@@ -132,12 +132,12 @@ public final class Utils {
      */
     public static String generateSHA1DigestFromString(String password) {
         try {
-            if(md==null) {
+            if (md == null) {
                 md = MessageDigest.getInstance("SHA1");
             }
             return new String(md.digest(password.getBytes()));
 
-        }catch (GeneralSecurityException ex) {
+        } catch (GeneralSecurityException ex) {
             // Should never happen since SHA1 is a valid algorithm.
         }
         return password;
@@ -165,10 +165,8 @@ public final class Utils {
      * we can compare it to the data Google has posted in their API. So we convert
      * it to hex and do some math to get it into the form Google shares.
      *
-     * @param color
-     * The string the calendar database stores
-     * @return
-     * The hex string as Google lists in their API
+     * @param color The string the calendar database stores
+     * @return The hex string as Google lists in their API
      * http://code.google.com/apis/calendar/data/2.0/reference.html#gCalcolor
      */
     private static String getColorHex(String color) {
@@ -234,5 +232,16 @@ public final class Utils {
             d.setSize(mode.getWidth(), mode.getHeight());
         }
         return d;
+    }
+
+
+    public static String readableFileSize(long size) {
+        if (size <= 0) {
+            return "0 KB";
+        }
+
+        final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
+        int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+        return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
 }

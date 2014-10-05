@@ -8,12 +8,12 @@ import java.awt.event.MouseListener;
  * (press, release, click, enter, and exit) on a component.
  * (To track mouse moves and mouse drags, use the
  * <code>MouseMotionListener</code>.)
- * <P>
+ * <p>
  * The class that is interested in processing a mouse event
  * either implements this interface (and all the methods it
  * contains) or extends the abstract <code>MouseAdapter</code> class
  * (overriding only the methods of interest).
- * <P>
+ * <p>
  * The listener object created from that class is then registered with a
  * component using the component's <code>addMouseListener</code>
  * method. A mouse event is generated when the mouse is pressed, released
@@ -22,12 +22,11 @@ import java.awt.event.MouseListener;
  * occurs, the relevant method in the listener object is invoked, and
  * the <code>MouseEvent</code> is passed to it.
  *
+ * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @version 1.0
  * @see java.awt.event.MouseAdapter
  * @see MouseEvent
  * @see <a href="http://docs.oracle.com/javase/tutorial/uiswing/events/mouselistener.html">Tutorial: Writing a Mouse Listener</a>
- *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
  */
 @FunctionalInterface
 public interface OnMouseClick extends MouseListener {
@@ -43,27 +42,27 @@ public interface OnMouseClick extends MouseListener {
      * Invoked when a mouse button has been pressed on a component.
      */
     @Override
-    default public void mousePressed(MouseEvent e){
+    default public void mousePressed(MouseEvent e) {
     }
 
     /**
      * Invoked when a mouse button has been released on a component.
      */
     @Override
-    default public void mouseReleased(MouseEvent e){
+    default public void mouseReleased(MouseEvent e) {
     }
 
     /**
      * Invoked when the mouse enters a component.
      */
     @Override
-    default public void mouseEntered(MouseEvent e){
+    default public void mouseEntered(MouseEvent e) {
     }
 
     /**
      * Invoked when the mouse exits a component.
      */
     @Override
-    default public void mouseExited(MouseEvent e){
+    default public void mouseExited(MouseEvent e) {
     }
 }

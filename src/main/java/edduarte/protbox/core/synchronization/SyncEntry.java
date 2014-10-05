@@ -1,17 +1,17 @@
 package edduarte.protbox.core.synchronization;
 
-import edduarte.protbox.core.registry.ProtboxRegistry;
-import edduarte.protbox.core.registry.ProtboxEntry;
+import edduarte.protbox.core.registry.PReg;
+import edduarte.protbox.core.registry.PbxEntry;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 1.0
  */
 final class SyncEntry {
-    final ProtboxRegistry reg;
-    final ProtboxEntry entry;
+    final PReg reg;
+    final PbxEntry entry;
 
-    SyncEntry(ProtboxRegistry reg, ProtboxEntry entry) {
+    SyncEntry(PReg reg, PbxEntry entry) {
         this.reg = reg;
         this.entry = entry;
     }
