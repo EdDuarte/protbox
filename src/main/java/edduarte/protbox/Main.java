@@ -1,5 +1,6 @@
 package edduarte.protbox;
 
+import com.google.common.collect.Lists;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.PbxUser;
@@ -16,6 +17,9 @@ import edduarte.protbox.utils.dataholders.Double;
 import edduarte.protbox.utils.dataholders.Single;
 import ij.io.DirectoryChooser;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.AndFileFilter;
+import org.apache.commons.io.filefilter.HiddenFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.io.input.ReaderInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,20 +90,14 @@ public class Main {
         }
 
         // add PKCS11 providers
-        File[] providersConfigFiles = new File(Constants.PROVIDERS_DIR).listFiles();
+        FileFilter fileFilter = new AndFileFilter(
+                new WildcardFileFilter(Lists.newArrayList("*.config")), HiddenFileFilter.VISIBLE);
+
+        File[] providersConfigFiles = new File(Constants.PROVIDERS_DIR).listFiles(fileFilter);
 
         if (providersConfigFiles != null) {
             for (File f : providersConfigFiles) {
-                String fileExtension = f.getName();
-                if (!fileExtension.contains(".")) {
-                    continue;
-                }
-                fileExtension = fileExtension.substring(fileExtension.lastIndexOf('.'), fileExtension.length());
-                if (!fileExtension.equals(".config")) {
-                    continue;
-                }
                 try {
-                    System.out.println(f.getAbsolutePath());
                     List<String> lines = FileUtils.readLines(f);
                     String aliasLine = lines
                             .stream()
@@ -122,10 +120,19 @@ public class Main {
 
                 } catch (IOException | ProviderException ex) {
                     if (ex.getMessage().equals("Initialization failed")) {
-                        JOptionPane.showMessageDialog(null,
-                                "Protbox did not found an available smart card reader in the current machine!\n"
-                                        + "Please connect a smart card reader before opening the application.",
-                                "Smart card reader not found", JOptionPane.ERROR_MESSAGE);
+                        ex.printStackTrace();
+
+                        String s = "The following error occurred:\n"
+                                + ex.getCause().getMessage()+"\n\nIn addition, make sure you have "
+                                + "an available smart card reader connected before opening the application.";
+                        JTextArea textArea = new JTextArea(s);
+                        textArea.setColumns(60);
+                        textArea.setLineWrap(true);
+                        textArea.setWrapStyleWord(true);
+                        textArea.setSize(textArea.getPreferredSize().width, 1);
+
+                        JOptionPane.showMessageDialog(
+                                null, textArea, "Error loading PKCS11 provider", JOptionPane.ERROR_MESSAGE);
                         System.exit(1);
                     } else {
                         ex.printStackTrace();
