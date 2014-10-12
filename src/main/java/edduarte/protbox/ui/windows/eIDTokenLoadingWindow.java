@@ -5,10 +5,9 @@ import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.utils.Callback;
 import edduarte.protbox.utils.TokenParser;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.dataholders.Double;
+import edduarte.protbox.utils.tuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.security.x509.X509CertImpl;
@@ -24,6 +23,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.function.BiConsumer;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -38,7 +38,7 @@ public class eIDTokenLoadingWindow extends JFrame {
     private ImageIcon loadingIcon = new ImageIcon(new File(Constants.INSTALL_DIR, "vfl3Wt7C").getAbsolutePath());
 
 
-    private eIDTokenLoadingWindow(final String providerName, final Callback<Double<PbxUser, CertificateData>> callback) {
+    private eIDTokenLoadingWindow(final String providerName, final BiConsumer<PbxUser, CertificateData> consumer) {
         super("Validating your Citizen Card - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.setLayout(null);
@@ -91,12 +91,12 @@ public class eIDTokenLoadingWindow extends JFrame {
                     t.cancel();
 
                     setInfoWithLoading();
-                    Double<PbxUser, CertificateData> entry = getCertificateData(alias, ks);
+                    Pair<PbxUser, CertificateData> entry = getCertificateData(alias, ks);
 
                     setInfoWithUser(entry.first);
                     Thread.sleep(2000);
 
-                    callback.onResult(new Double<>(entry.first, entry.second));
+                    consumer.accept(entry.first, entry.second);
                     t.cancel();
                     dispose();
 
@@ -109,10 +109,10 @@ public class eIDTokenLoadingWindow extends JFrame {
         }, 0, 3000);
     }
 
-    public static eIDTokenLoadingWindow showPrompt(String providerName,
-                                                   Callback<Double<PbxUser, CertificateData>> callback) {
+    public static eIDTokenLoadingWindow showPrompt(final String providerName,
+                                                   final BiConsumer<PbxUser, CertificateData> consumer) {
         if (instance == null) {
-            instance = new eIDTokenLoadingWindow(providerName, callback);
+            instance = new eIDTokenLoadingWindow(providerName, consumer);
         } else {
             instance.show();
             instance.toFront();
@@ -120,7 +120,7 @@ public class eIDTokenLoadingWindow extends JFrame {
         return instance;
     }
 
-    private static Double<PbxUser, CertificateData> getCertificateData(String alias, KeyStore ks) {
+    private static Pair<PbxUser, CertificateData> getCertificateData(String alias, KeyStore ks) {
         Certificate cert = null;
         try {
             ks.load(null, null);
@@ -163,7 +163,7 @@ public class eIDTokenLoadingWindow extends JFrame {
 
                 CertificateData data = new CertificateData(encodedPublicKey, signatureBytes, pair.getPrivate());
 
-                return new Double<>(user, data);
+                return Pair.of(user, data);
             }
         } catch (CertificateException | KeyStoreException ex) {
             ex.printStackTrace();
@@ -181,13 +181,13 @@ public class eIDTokenLoadingWindow extends JFrame {
     }
 
     private void setInfoWithLooking() {
-        info.setText("Please insert your citizen card...");
+        info.setText("Please insert your eID token...");
         info.setIcon(new ImageIcon(Constants.getAsset("id-card.png")));
     }
 
     private void setInfoWithLoading() {
         info.setIcon(loadingIcon);
-        info.setText("Loading Card info ...");
+        info.setText("Reading token data ...");
     }
 
     private void setInfoWithUser(PbxUser user) {

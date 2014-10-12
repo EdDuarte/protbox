@@ -4,9 +4,10 @@ import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.FolderOption;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.dataholders.Triple;
+import edduarte.protbox.utils.tuples.Triple;
 import org.apache.commons.io.FileUtils;
 
+import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -20,7 +21,7 @@ import java.util.stream.Collectors;
  * PRegFile is a entry that structures a file in the Registry. Other than having the same
  * variables as {@link PbxEntry}, a fileFile is also represented by an array of bytes that contains
  * the data of the file. This array is only filled when the correspondent file in the native
- * folders are hidden.
+ * folders are areNativeFilesDeleted.
  *
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
  * @version 2.0
@@ -28,7 +29,9 @@ import java.util.stream.Collectors;
 public final class PbxFile extends PbxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private SnapshotStack dataStack;
+    private SnapshotStack snapshotStack;
+    private BackupPolicy backupPolicy;
+
 
     PbxFile(final PReg parentRegistry,
             final PbxFolder parentFolder,
@@ -36,7 +39,8 @@ public final class PbxFile extends PbxEntry implements Serializable {
             final String realName) {
 
         super(parentRegistry, parentFolder, encodedName, realName);
-        this.dataStack = new SnapshotStack();
+        this.snapshotStack = new SnapshotStack();
+        this.backupPolicy = BackupPolicy.Regular10;
     }
 
 
@@ -47,7 +51,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
      * a empty byte array if this file has no backup data stored
      */
     public Snapshot getLatestSnapshot() {
-        Snapshot mostRecentSnapshot = dataStack.peek();
+        Snapshot mostRecentSnapshot = snapshotStack.peek();
         return mostRecentSnapshot != null ? mostRecentSnapshot : Snapshot.empty();
     }
 
@@ -58,8 +62,8 @@ public final class PbxFile extends PbxEntry implements Serializable {
      * @return the most recent data for the file represented by this file, or
      * a empty byte array if this file has no backup data stored
      */
-    List<String> snapshotsToString() {
-        return dataStack
+    public List<String> snapshotsToString() {
+        return snapshotStack
                 .stream()
                 .map(Snapshot::toString)
                 .collect(Collectors.toList());
@@ -73,7 +77,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
      * @return the number of stored snapshots
      */
     int getSnapshotCount() {
-        return dataStack.size();
+        return snapshotStack.size();
     }
 
 
@@ -81,6 +85,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
      * Sets the data of the file to the specified data.
      */
     public void createSnapshotFromFile(File snapshotFile, FolderOption fromFolder) throws ProtException {
+        System.out.println("-------------- " + snapshotFile.getName() + " " + new Date(snapshotFile.lastModified()).toString());
         try {
             byte[] fileData;
 
@@ -93,7 +98,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
 
             long fileSize = snapshotFile.length();
             Date lastModifiedDate = new Date(snapshotFile.lastModified());
-            dataStack.push(new Snapshot(fileData, fileSize, lastModifiedDate));
+            snapshotStack.push(new Snapshot(fileData, fileSize, lastModifiedDate));
 
         } catch (IOException | GeneralSecurityException ex) {
             throw new ProtException(ex);
@@ -107,14 +112,12 @@ public final class PbxFile extends PbxEntry implements Serializable {
     public void writeSnapshotToFile(int index, File snapshotFile, FolderOption toFolder) throws ProtException {
         Snapshot snapshot;
         try {
-            snapshot = dataStack.get(index);
+            snapshot = snapshotStack.get(index);
 
         } catch (IndexOutOfBoundsException ex) {
             return;
         }
         try {
-            snapshotFile.setLastModified(snapshot.getSnapshotLastModifiedDate().getTime());
-
             if (toFolder == FolderOption.SHARED) {
                 FileUtils.writeByteArrayToFile(snapshotFile, parentRegistry.encrypt(snapshot.getSnapshotData()));
 
@@ -122,21 +125,55 @@ public final class PbxFile extends PbxEntry implements Serializable {
                 FileUtils.writeByteArrayToFile(snapshotFile, snapshot.getSnapshotData());
             }
 
+            snapshotFile.setLastModified(snapshot.getSnapshotLastModifiedDate().getTime());
+//            snapshotFile.setLastModified(new Date().getTime());
+
         } catch (IOException | GeneralSecurityException ex) {
             throw new ProtException(ex);
         }
     }
 
 
+    public void setBackupPolicy(BackupPolicy backupPolicy) {
+        if (!backupPolicy.equals(BackupPolicy.Ask)) {
+            boolean changeBackupPolicy = true;
+            if (snapshotStack.size() > backupPolicy.maxBackupSize) {
+                changeBackupPolicy = JOptionPane.showConfirmDialog(null,
+                        "The number of stored backup copies have been reduced to " + backupPolicy.maxBackupSize +
+                                ", and prior backups above that number will be deleted.\n" +
+                                "Are you sure you want to change the backup policy?",
+                        "Confirm backup policy change",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_NO_OPTION;
+            }
+
+            if (changeBackupPolicy) {
+                this.backupPolicy = backupPolicy;
+                while (snapshotStack.size() > backupPolicy.maxBackupSize) {
+                    snapshotStack.removeLast();
+                }
+            }
+        }
+    }
+
+
+    public BackupPolicy getBackupPolicy() {
+        return backupPolicy;
+    }
+
+
     /**
      * Suggests Java Garbage Collector to stop storing this file's data.
      */
-    void clearData() {
-//        if (dataStack != null) {
-//            Arrays.fill(dataStack, (byte) 0);
-//            dataStack = null;
-//            System.gc();
-//        }
+    void clearSnapshots() {
+//        Snapshot s = getLatestSnapshot();
+
+        snapshotStack.clear();
+        snapshotStack = null;
+        System.gc();
+
+//        snapshotStack = new SnapshotStack();
+//        snapshotStack.push(s);
     }
 
 
@@ -173,17 +210,34 @@ public final class PbxFile extends PbxEntry implements Serializable {
         return super.equals(obj);
     }
 
+
+    public enum BackupPolicy {
+
+        None(1), // don't backup this file
+        Regular10(10), // backup 10 copies
+        Regular50(50), // backup 50 copies
+        Regular100(100), // backup 100 copies
+        Ask(0); // ask every time
+
+        private int maxBackupSize;
+
+        private BackupPolicy(int maxBackupSize) {
+            this.maxBackupSize = maxBackupSize;
+        }
+    }
+
     public static final class Snapshot implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private Triple<byte[], Long, Date> dataHolder;
+        private Triple<byte[], Long, Date> triple;
+
 
         /**
          * Constructor to instantiate a snapshot, which will be used for backup
          * and restoring purposes.
          */
         private Snapshot(byte[] data, long dataSize, Date snapshotLastModified) {
-            this.dataHolder = new Triple<>(data, dataSize, snapshotLastModified);
+            this.triple = Triple.of(data, dataSize, snapshotLastModified);
         }
 
 
@@ -195,24 +249,39 @@ public final class PbxFile extends PbxEntry implements Serializable {
             return new Snapshot(new byte[0], 0, Constants.getToday());
         }
 
+
         public byte[] getSnapshotData() {
-            return dataHolder.first;
+            return triple.first;
         }
 
 
         public long getSnapshotSize() {
-            return dataHolder.second;
+            return triple.second;
         }
 
 
         public Date getSnapshotLastModifiedDate() {
-            return dataHolder.third;
+            return triple.third;
         }
+
 
         @Override
         public String toString() {
-            return Constants.formatDate(getSnapshotLastModifiedDate()) + ", at " +
-                    Utils.readableFileSize(getSnapshotSize());
+            return Utils.readableFileSize(getSnapshotSize()) + ", at " +
+                    Constants.formatDate(getSnapshotLastModifiedDate());
+        }
+
+
+        @Override
+        public int hashCode() {
+            return triple.hashCode();
+        }
+
+
+        @Override
+        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
+        public boolean equals(Object obj) {
+            return triple.equals(obj);
         }
     }
 
@@ -224,10 +293,23 @@ public final class PbxFile extends PbxEntry implements Serializable {
 
         @Override
         public void push(Snapshot newSnapshot) {
-            while (size() > parentRegistry.getMaxDeletedSize()) {
-                removeLast();
+            if (backupPolicy.equals(BackupPolicy.Ask)) {
+                super.push(newSnapshot);
+                if (JOptionPane.showConfirmDialog(null,
+                        "A new version of '" + realName() + "' has been detected.\n" +
+                                "Would you like to backup the previous version?",
+                        "Confirm Backup",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE) == JOptionPane.NO_OPTION) {
+                    removeLast();
+                }
+
+            } else {
+                while (size() > backupPolicy.maxBackupSize) {
+                    removeLast();
+                }
+                super.push(newSnapshot);
             }
-            super.push(newSnapshot);
         }
     }
 }

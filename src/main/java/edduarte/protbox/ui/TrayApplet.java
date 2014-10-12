@@ -36,11 +36,10 @@ public class TrayApplet extends JDialog {
 
         statusText = new JLabel("");
 
-//        final Integer clickInterval = (Integer) Toolkit.getDefaultToolkit().getDesktopProperty("awt.multiClickInterval");
         final int clickInterval = 100;
 
         this.trayIcon = new TrayIcon(TrayStatus.OKAY.trayIcon);
-        this.status(TrayStatus.LOADING, "Loading");
+        setStatus(TrayStatus.OKAY, "");
         this.trayIcon.setImageAutoSize(true);
         this.trayIcon.addMouseListener(new TrayClickListener(this, clickInterval));
 
@@ -81,7 +80,7 @@ public class TrayApplet extends JDialog {
         this.add(scrollList);
 
 
-        JLabel addFolder = new JLabel("Monitor folder...");
+        JLabel addFolder = new JLabel("Monitor a new pair...");
         addFolder.setLayout(null);
         addFolder.setBounds(30, 219, 150, 30);
         addFolder.setFont(Constants.FONT);
@@ -129,6 +128,7 @@ public class TrayApplet extends JDialog {
         if (Constants.verbose) logger.info("All swing elements were built");
     }
 
+
     public static TrayApplet getInstance() {
         if (instance == null) {
             instance = new TrayApplet();
@@ -139,6 +139,7 @@ public class TrayApplet extends JDialog {
         return instance;
     }
 
+
     public PairPanel[] getPairPanels() {
         return Arrays.asList(instanceList.getComponents())
                 .stream()
@@ -146,15 +147,18 @@ public class TrayApplet extends JDialog {
                 .toArray(PairPanel[]::new);
     }
 
+
     public void addPairPanel(PairPanel pairPanel) {
         instanceList.add(pairPanel);
         repaint();
     }
 
+
     public void removePairPanel(PairPanel pairPanel) {
         instanceList.remove(pairPanel);
         repaint();
     }
+
 
     @Override
     public void repaint() {
@@ -163,7 +167,8 @@ public class TrayApplet extends JDialog {
         instanceList.repaint();
     }
 
-    public void status(TrayStatus status, String extraInfo) {
+
+    public void setStatus(TrayStatus status, String extraInfo) {
         trayIcon.setImage(status.trayIcon);
         statusText.setIcon(new ImageIcon(status.dialogIcon));
 
@@ -173,7 +178,7 @@ public class TrayApplet extends JDialog {
     }
 
 
-    public void baloon(String caption, String msg, TrayIcon.MessageType type) {
+    public void showBalloon(String caption, String msg, TrayIcon.MessageType type) {
         trayIcon.displayMessage(caption, msg, type);
     }
 
@@ -187,12 +192,13 @@ public class TrayApplet extends JDialog {
         private BufferedImage dialogIcon;
         private String msg;
 
-        TrayStatus(BufferedImage trayIcon, BufferedImage dialogIcon, String message) {
+        private TrayStatus(BufferedImage trayIcon, BufferedImage dialogIcon, String message) {
             this.trayIcon = trayIcon;
             this.dialogIcon = dialogIcon;
             this.msg = message;
         }
     }
+
 
     private class TrayClickListener extends MouseAdapter implements ActionListener {
         JDialog frame;

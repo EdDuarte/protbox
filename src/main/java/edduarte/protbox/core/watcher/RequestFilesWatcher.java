@@ -1,12 +1,12 @@
 package edduarte.protbox.core.watcher;
 
 import edduarte.protbox.exception.ProtException;
-import edduarte.protbox.utils.Callback;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.function.Consumer;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -16,13 +16,12 @@ public class RequestFilesWatcher implements Runnable {
 
     private static org.slf4j.Logger logger = LoggerFactory.getLogger(RequestFilesWatcher.class);
 
-    private Callback<File> callback;
-
+    private Consumer<File> consumer;
 
     private WatchService watchService = FileSystems.getDefault().newWatchService();
 
-    public RequestFilesWatcher(Path root, Callback<File> callback) throws IOException {
-        this.callback = callback;
+    public RequestFilesWatcher(Path root, Consumer<File> Consumer) throws IOException {
+        this.consumer = Consumer;
         watch(root);
     }
 
@@ -50,7 +49,7 @@ public class RequestFilesWatcher implements Runnable {
                     WatchEvent.Kind kind = event.kind();
                     if (kind.equals(StandardWatchEventKinds.ENTRY_CREATE)) {
                         System.out.println("detected" + file.toString());
-                        callback.onResult(file);
+                        consumer.accept(file);
                     }
                 }
                 key.reset();

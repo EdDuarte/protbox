@@ -31,7 +31,7 @@ public class PairPanel extends JLabel {
         setSize(312, 50);
         setOpaque(false);
 
-        JLabel icon = new JLabel(new ImageIcon(Constants.getAsset("instance.png")));
+        JLabel icon = new JLabel(new ImageIcon(Constants.getAsset("folder.png")));
         icon.setBounds(10, 12, 28, 28);
         add(icon);
 

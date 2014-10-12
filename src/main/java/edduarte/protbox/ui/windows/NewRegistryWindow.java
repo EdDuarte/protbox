@@ -12,8 +12,8 @@ import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.dataholders.Double;
-import edduarte.protbox.utils.dataholders.Triple;
+import edduarte.protbox.utils.tuples.Pair;
+import edduarte.protbox.utils.tuples.Triple;
 import ij.io.DirectoryChooser;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.prompt.PromptSupport;
@@ -153,7 +153,7 @@ public class NewRegistryWindow extends JFrame {
             byte[] signatureBytes = Main.getCertificateData().getSignatureBytes();
 
             // SAVE THE SIGNED PUBLIC KEY, THE SIGNATURE AND THE USER DATA IN THE "»ASK" FILE
-            out.writeObject(new Triple<>(thisUser, encodedPublicKey, signatureBytes));
+            out.writeObject(Triple.of(thisUser, encodedPublicKey, signatureBytes));
             out.flush();
             waitForResponse(sharedFolderPath, askFile, Main.getCertificateData().getExchangePrivateKey());
 
@@ -200,7 +200,7 @@ public class NewRegistryWindow extends JFrame {
 
                         // LOAD RECEIVED FILE WITH ALGORITHM AND ENCRYPTED KEY
                         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(detectedFile))) {
-                            Double<String, byte[]> keyFile = (Double<String, byte[]>) in.readObject();
+                            Pair<String, byte[]> keyFile = (Pair<String, byte[]>) in.readObject();
                             in.close();
                             Constants.delete(detectedFile);
 

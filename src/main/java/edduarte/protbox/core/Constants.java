@@ -64,7 +64,7 @@ public final class Constants {
     /**
      * Returns the standard Date format to be used in this application.
      */
-    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy");
+    private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy, HH:mm:ss");
     private static final Map<String, BufferedImage> cachedAssets = new HashMap<>();
     private static final FileDeleteStrategy deleter = FileDeleteStrategy.FORCE;
     public static boolean verbose = false;
@@ -85,8 +85,8 @@ public final class Constants {
             } catch (IOException | IllegalArgumentException ex) {
                 ex.printStackTrace();
                 JOptionPane.showMessageDialog(null,
-                        "Asset file " + resourceFileName + " not detected or corrupted!\nPlease reinstall the application.",
-                        "Nonexistent or corrupted asset file",
+                        "Asset file " + resourceFileName + " not detected or corrupted!\n" +
+                                "Please reinstall the application.", "Nonexistent or corrupted asset file",
                         JOptionPane.ERROR_MESSAGE);
                 System.exit(1);
             }

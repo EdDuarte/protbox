@@ -1,8 +1,8 @@
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
+import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.utils.Callback;
 import edduarte.protbox.utils.Utils;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.border.DropShadowBorder;
@@ -12,10 +12,12 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.Set;
 import java.util.Vector;
+import java.util.function.Consumer;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -24,14 +26,18 @@ import java.util.Vector;
 public class ProviderListWindow extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(ProviderListWindow.class);
 
+    private Consumer<String> selectedProviderConsumer;
+    private JList<String> jList;
+    private JLabel action;
     private boolean providerWasSelected = false;
 
-    private ProviderListWindow(final Vector<String> providerNames, final Callback<String> selectedProviderCallback) {
+    private ProviderListWindow(final Vector<String> providerNames, final Consumer<String> selectedProviderConsumer) {
         super("Providers - Protbox");
         setIconImage(Constants.getAsset("box.png"));
         setLayout(null);
 
-        final JList<String> jList = new JList<>();
+        this.selectedProviderConsumer = selectedProviderConsumer;
+
 
         JLabel close = new JLabel(new ImageIcon(Constants.getAsset("close.png")));
         close.setLayout(null);
@@ -41,19 +47,11 @@ public class ProviderListWindow extends JFrame {
         close.addMouseListener((OnMouseClick) e -> dispose());
         add(close);
 
-        final JLabel action = new JLabel(new ImageIcon(Constants.getAsset("ok.png")));
+        action = new JLabel(new ImageIcon(Constants.getAsset("ok.png")));
         action.setLayout(null);
         action.setBounds(90, 465, 122, 39);
         action.setBackground(Color.black);
-        action.setEnabled(false);
-        action.addMouseListener((OnMouseClick) e -> {
-            if (action.isEnabled()) {
-                String selectedProviderName = jList.getSelectedValue();
-                selectedProviderCallback.onResult(selectedProviderName);
-                providerWasSelected = true;
-                dispose();
-            }
-        });
+        action.addMouseListener((OnMouseClick) e -> onOkPressed());
         add(action);
 
         final JLabel cancel = new JLabel(new ImageIcon(Constants.getAsset("cancel.png")));
@@ -63,6 +61,7 @@ public class ProviderListWindow extends JFrame {
         cancel.addMouseListener((OnMouseClick) e -> dispose());
         add(cancel);
 
+        jList = new JList<>();
         jList.setListData(providerNames);
 
         final int[] over = new int[1];
@@ -72,6 +71,8 @@ public class ProviderListWindow extends JFrame {
             public void mouseClicked(MouseEvent e) {
                 if (jList.getSelectedValue() != null) {
                     action.setEnabled(true);
+                } else {
+                    action.setEnabled(false);
                 }
             }
 
@@ -121,6 +122,13 @@ public class ProviderListWindow extends JFrame {
                 return label;
             }
         });
+        jList.addKeyListener((OnKeyReleased) e -> {
+            if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                onOkPressed();
+            }
+        });
+        jList.setSelectedIndex(0);
+        jList.requestFocus();
 
 
         final JScrollPane scroll = new JScrollPane(jList,
@@ -149,8 +157,9 @@ public class ProviderListWindow extends JFrame {
     }
 
 
-    public static ProviderListWindow showWindow(final Set<String> providerNames, final Callback<String> selectedProviderCallback) {
-        return new ProviderListWindow(new Vector<>(providerNames), selectedProviderCallback);
+    public static ProviderListWindow showWindow(final Set<String> providerNames,
+                                                final Consumer<String> selectedProviderConsumer) {
+        return new ProviderListWindow(new Vector<>(providerNames), selectedProviderConsumer);
     }
 
 
@@ -165,7 +174,8 @@ public class ProviderListWindow extends JFrame {
     public void dispose() {
         if (!providerWasSelected) {
             if (JOptionPane.showConfirmDialog(
-                    ProviderListWindow.this, "You need to choose a PKCS11 provider in order to use the application. Are you sure you want to cancel and close the application?\n",
+                    ProviderListWindow.this, "You need to choose a PKCS11 provider in order to use the application. " +
+                            "Are you sure you want to cancel and close the application?\n",
                     "Confirm Close",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
@@ -174,6 +184,16 @@ public class ProviderListWindow extends JFrame {
             }
         } else {
             super.dispose();
+        }
+    }
+
+
+    public void onOkPressed() {
+        if (action.isEnabled()) {
+            String selectedProviderName = jList.getSelectedValue();
+            selectedProviderConsumer.accept(selectedProviderName);
+            providerWasSelected = true;
+            dispose();
         }
     }
 }

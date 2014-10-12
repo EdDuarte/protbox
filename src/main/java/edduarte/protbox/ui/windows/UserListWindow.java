@@ -4,7 +4,7 @@ import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.dataholders.Single;
+import edduarte.protbox.utils.tuples.Single;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.border.DropShadowBorder;
 import org.slf4j.Logger;
@@ -142,8 +142,8 @@ public class UserListWindow extends JFrame {
             action.addMouseListener((OnMouseClick) e -> {
                 if (action.isEnabled()) {
                     PbxUser selectedUser = jList.getSelectedValue();
-                    result = new Single<>(selectedUser);
-                        dispose();
+                    result = Single.of(selectedUser);
+                    dispose();
                 }
             });
             add(action);
@@ -215,7 +215,7 @@ public class UserListWindow extends JFrame {
                     "Confirm Cancel",
                     JOptionPane.YES_NO_OPTION,
                     JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
-                result = new Single<>(null);
+                result = Single.of(null);
                 super.dispose();
             }
         } else {

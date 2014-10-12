@@ -3,7 +3,6 @@ package edduarte.protbox.ui.windows;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.ui.listeners.OnKeyReleased;
 import edduarte.protbox.ui.listeners.OnMouseClick;
-import edduarte.protbox.utils.Callback;
 import edduarte.protbox.utils.Utils;
 
 import javax.swing.*;
@@ -14,6 +13,7 @@ import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -21,13 +21,13 @@ import java.util.Arrays;
  */
 public class InsertPasswordWindow extends JFrame {
     private JPasswordField field;
-    private Callback<String> callback;
+    private Consumer<String> consumer;
 
-    private InsertPasswordWindow(Callback<String> callback) {
+    private InsertPasswordWindow(Consumer<String> consumer) {
         super("Insert the saved directories password - Protbox");
         this.setIconImage(Constants.getAsset("box.png"));
         this.setLayout(null);
-        this.callback = callback;
+        this.consumer = consumer;
 
         JLabel info = new JLabel();
         info.setText("Insert a password for your saved directories:");
@@ -83,8 +83,8 @@ public class InsertPasswordWindow extends JFrame {
     }
 
 
-    public static void showPrompt(Callback<String> callback) {
-        new InsertPasswordWindow(callback);
+    public static void showPrompt(Consumer<String> consumer) {
+        new InsertPasswordWindow(consumer);
     }
 
 
@@ -97,7 +97,7 @@ public class InsertPasswordWindow extends JFrame {
                     JOptionPane.ERROR_MESSAGE);
 
         } else {
-            callback.onResult(new String(input));
+            consumer.accept(new String(input));
             dispose();
         }
 

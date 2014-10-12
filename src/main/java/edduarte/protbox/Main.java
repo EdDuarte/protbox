@@ -12,9 +12,8 @@ import edduarte.protbox.ui.windows.InsertPasswordWindow;
 import edduarte.protbox.ui.windows.NewRegistryWindow;
 import edduarte.protbox.ui.windows.ProviderListWindow;
 import edduarte.protbox.ui.windows.eIDTokenLoadingWindow;
-import edduarte.protbox.utils.Callback;
-import edduarte.protbox.utils.dataholders.Double;
-import edduarte.protbox.utils.dataholders.Single;
+import edduarte.protbox.utils.tuples.Pair;
+import edduarte.protbox.utils.tuples.Single;
 import ij.io.DirectoryChooser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AndFileFilter;
@@ -31,6 +30,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
 import java.awt.*;
 import java.io.*;
+import java.lang.reflect.Field;
 import java.net.ServerSocket;
 import java.security.GeneralSecurityException;
 import java.security.Provider;
@@ -38,6 +38,7 @@ import java.security.ProviderException;
 import java.security.Security;
 import java.util.*;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
@@ -46,6 +47,19 @@ import java.util.List;
 public class Main {
     public static final Map<String, String> pkcs11Providers = new HashMap<>();
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
+
+    static {
+        try {
+            // Lifts JCA restrictions on AES key length
+            Class security_class = Class.forName("javax.crypto.JceSecurity");
+            Field restricted_field = security_class.getDeclaredField("isRestricted");
+            restricted_field.setAccessible(true);
+            restricted_field.set(null, false);
+
+        } catch (ReflectiveOperationException ex) {
+            logger.error(ex.getMessage(), ex);
+        }
+    }
 
     private static PbxUser user;
     private static CertificateData certificateData;
@@ -166,17 +180,17 @@ public class Main {
         ProviderListWindow.showWindow(Main.pkcs11Providers.keySet(), providerName -> {
 
             // loads eID token
-            eIDTokenLoadingWindow.showPrompt(providerName, result -> {
-                user = result.pollFirst();
-                certificateData = result.pollSecond();
+            eIDTokenLoadingWindow.showPrompt(providerName, (returnedUser, returnedCertificateData) -> {
+                user = returnedUser;
+                certificateData = returnedCertificateData;
 
                 // gets a password to use on the saved registry files (for loading and saving)
-                final Single<Callback<SecretKey>> callbackHolder = new Single<>(null);
-                callbackHolder.value = password -> {
+                final Single<Consumer<SecretKey>> consumerHolder = Single.of(null);
+                consumerHolder.value = password -> {
                     registriesPasswordKey = password;
                     try {
                         // if there are serialized files, load them if they can be decoded by this user's private key
-                        final List<Double<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
+                        final List<Pair<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
                         if (Constants.verbose) {
                             logger.info("Reading serialized registry files...");
                         }
@@ -190,7 +204,7 @@ public class Main {
                                         Cipher cipher = Cipher.getInstance("AES");
                                         cipher.init(Cipher.DECRYPT_MODE, registriesPasswordKey);
                                         byte[] realData = cipher.doFinal(data);
-                                        serializedDirectoryFiles.add(new Double<>(f, realData));
+                                        serializedDirectoryFiles.add(Pair.of(f, realData));
                                     } catch (GeneralSecurityException ex) {
                                         if (Constants.verbose) {
                                             logger.info("Inserted Password does not correspond to " + f.getName());
@@ -223,35 +237,34 @@ public class Main {
                                 null, "The inserted password was invalid! Please try another one!",
                                 "Invalid password!",
                                 JOptionPane.ERROR_MESSAGE);
-                        insertPassword(callbackHolder.value);
+                        insertPassword(consumerHolder.value);
                     }
                 };
-                insertPassword(callbackHolder.value);
-
+                insertPassword(consumerHolder.value);
             });
         });
     }
 
 
-    private static void insertPassword(Callback<SecretKey> passwordKeyCallback) {
+    private static void insertPassword(Consumer<SecretKey> passwordKeyConsumer) {
         InsertPasswordWindow.showPrompt(pw -> {
             // decode the serialized directories using the password
             // if password results in error, this registry does not belong to this user
             pw = pw + pw + pw + pw;
 
             SecretKey sKey = new SecretKeySpec(pw.getBytes(), "AES");
-            passwordKeyCallback.onResult(sKey);
+            passwordKeyConsumer.accept(sKey);
         });
     }
 
 
-    private static void loadRegistry(final List<Double<File, byte[]>> dataList) throws
-            IOException,
+    private static void loadRegistry(final List<Pair<File, byte[]>> dataList) throws
+    IOException,
             ReflectiveOperationException,
             GeneralSecurityException,
             ProtException {
 
-        for (Double<File, byte[]> pair : dataList) {
+        for (Pair<File, byte[]> pair : dataList) {
             File serialized = pair.first;
             if (Constants.verbose) {
                 logger.info("Reading {}...", serialized);

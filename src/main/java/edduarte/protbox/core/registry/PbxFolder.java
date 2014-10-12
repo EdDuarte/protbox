@@ -70,10 +70,13 @@ public final class PbxFolder extends PbxEntry implements Serializable {
      * Removes the specified file or folder from being a child of this folder.
      */
     void remove(PbxEntry e) {
-        if (e instanceof PbxFolder)
+        if (e instanceof PbxFolder) {
             subFolders.remove(e);
-        else if (e instanceof PbxFile)
+
+        } else if (e instanceof PbxFile) {
             subFiles.remove(e);
+
+        }
     }
 
 
@@ -88,7 +91,7 @@ public final class PbxFolder extends PbxEntry implements Serializable {
                 .filter(f -> f.realName().equalsIgnoreCase(fileName) || f.encodedName().equalsIgnoreCase(fileName))
                 .findFirst();
 
-        return value.get();
+        return value.isPresent() ? value.get() : null;
     }
 
 
@@ -103,7 +106,7 @@ public final class PbxFolder extends PbxEntry implements Serializable {
                 .filter(f -> f.realName().equalsIgnoreCase(folderName) || f.encodedName().equalsIgnoreCase(folderName))
                 .findFirst();
 
-        return value.get();
+        return value.isPresent() ? value.get() : null;
     }
 
 

@@ -5,8 +5,8 @@ import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.dataholders.Double;
-import edduarte.protbox.utils.dataholders.Triple;
+import edduarte.protbox.utils.tuples.Pair;
+import edduarte.protbox.utils.tuples.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,7 +178,7 @@ public class UserValidationWindow extends JFrame {
             // SAVE DIRECTORY'S ALGORITHM AND ENCRYPTED KEY IN FILE
             File keyFile = new File(parent, "»key" + newUser.getId());
             try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(keyFile))) {
-                out.writeObject(new Double<>(algorithm, encodedKey));
+                out.writeObject(Pair.of(algorithm, encodedKey));
             }
 
             dispose();

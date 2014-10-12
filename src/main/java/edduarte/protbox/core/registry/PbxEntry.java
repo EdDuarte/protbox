@@ -13,7 +13,7 @@ public abstract class PbxEntry implements Serializable {
     private final PbxFolder parentFolder;
     private final String encodedName;
     private final String realName;
-    boolean hidden;
+    boolean areNativeFilesDeleted;
 
 
     PbxEntry(final PReg parentRegistry,
@@ -24,7 +24,7 @@ public abstract class PbxEntry implements Serializable {
         this.parentFolder = parentFolder;
         this.encodedName = encodedName;
         this.realName = realName;
-        this.hidden = false;
+        this.areNativeFilesDeleted = false;
     }
 
     /**
@@ -74,13 +74,12 @@ public abstract class PbxEntry implements Serializable {
     }
 
     /**
-     * Returns if the entry is hidden or not. If this entry is hidden, it means that the
-     * file or folder represented by this entry is hidden from its native folders.
+     * Returns if the files or folders represented by this entry are deleted from its native folders.
      *
-     * @return <tt>true</tt> if this entry is hidden or <tt>false</tt> if it isn't
+     * @return <tt>true</tt> if the respective files are deleted or <tt>false</tt> if they are not
      */
-    public boolean isHidden() {
-        return hidden;
+    public boolean areNativeFilesDeleted() {
+        return areNativeFilesDeleted;
     }
 
 

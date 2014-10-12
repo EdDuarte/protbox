@@ -8,7 +8,7 @@ import edduarte.protbox.core.registry.PbxFile;
 import edduarte.protbox.core.registry.PbxFolder;
 import edduarte.protbox.exception.ProtException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.utils.dataholders.Pair;
+import edduarte.protbox.utils.tuples.Duo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +108,7 @@ public final class SyncModule {
     }
 
 
-    public static Pair<List<PbxEntry>> removeSyncPairsForReg(final PReg reg) {
+    public static Duo<List<PbxEntry>> removeSyncPairsForReg(final PReg reg) {
         List<PbxEntry> toProtRemoved = new ArrayList<>();
         List<PbxEntry> toSharedRemoved = new ArrayList<>();
 
@@ -130,7 +130,7 @@ public final class SyncModule {
             logger.info("Removed entries of registry " + reg.id);
         }
 
-        return new Pair<>(toProtRemoved, toSharedRemoved);
+        return Duo.of(toProtRemoved, toSharedRemoved);
     }
 
 
@@ -173,7 +173,7 @@ public final class SyncModule {
 
                 if (!toProt.isEmpty()) {
                     statusOK = false;
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING,
+                    TrayApplet.getInstance().setStatus(TrayApplet.TrayStatus.UPDATING,
                             Integer.toString(toProt.size() + toShared.size()) + " files");
                 }
 
@@ -196,7 +196,7 @@ public final class SyncModule {
                 }
 
                 if (!statusOK) {
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.OKAY, "");
+                    TrayApplet.getInstance().setStatus(TrayApplet.TrayStatus.OKAY, "");
                     statusOK = true;
                 }
 
@@ -217,7 +217,7 @@ public final class SyncModule {
 
                 if (!toProt.isEmpty()) {
                     statusOK = false;
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.UPDATING,
+                    TrayApplet.getInstance().setStatus(TrayApplet.TrayStatus.UPDATING,
                             Integer.toString(toProt.size() + toShared.size()) + " files");
                 }
 
@@ -241,7 +241,7 @@ public final class SyncModule {
                 }
 
                 if (!statusOK) {
-                    TrayApplet.getInstance().status(TrayApplet.TrayStatus.OKAY, "");
+                    TrayApplet.getInstance().setStatus(TrayApplet.TrayStatus.OKAY, "");
                     statusOK = true;
                 }
 

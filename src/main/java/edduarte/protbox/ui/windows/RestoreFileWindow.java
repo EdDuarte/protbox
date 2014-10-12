@@ -43,24 +43,24 @@ public class RestoreFileWindow extends JDialog {
         super();
         setLayout(null);
 
-        final JTextField field = new JTextField();
-        field.setLayout(null);
-        PromptSupport.setPrompt("  Search for a file to restore...", field);
-        PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, field);
-        field.setBounds(2, 2, 301, 26);
-        field.setBorder(new LineBorder(Color.lightGray));
-        field.setFont(Constants.FONT);
-        add(field);
+        final JTextField searchField = new JTextField();
+        searchField.setLayout(null);
+        PromptSupport.setPrompt("  Search for a file to restore...", searchField);
+        PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, searchField);
+        searchField.setBounds(2, 2, 301, 26);
+        searchField.setBorder(new LineBorder(Color.lightGray));
+        searchField.setFont(Constants.FONT);
+        add(searchField);
 
 
-        final JLabel noDeleted = new JLabel("<html>No deleted files were found!<br><br>" +
-                "<font color=\"gray\">If you think some file from the registry was<br>" +
-                "deleted and it's not here, please create an issue here:<br>" +
+        final JLabel noBackupFilesLabel = new JLabel("<html>No backups files were found!<br><br>" +
+                "<font color=\"gray\">If you think there is a problem with the<br>" +
+                "backup system, please create an issue here:<br>" +
                 "<a href=\"#\">https://github.com/edduarte/protbox/issues</a></font></html>");
-        noDeleted.setLayout(null);
-        noDeleted.setBounds(20, 50, 300, 300);
-        noDeleted.setFont(Constants.FONT.deriveFont(14f));
-        noDeleted.addMouseListener((OnMouseClick) e -> {
+        noBackupFilesLabel.setLayout(null);
+        noBackupFilesLabel.setBounds(20, 50, 300, 300);
+        noBackupFilesLabel.setFont(Constants.FONT.deriveFont(14f));
+        noBackupFilesLabel.addMouseListener((OnMouseClick) e -> {
             String urlPath = "https://github.com/edduarte/protbox/issues";
 
             try {
@@ -92,19 +92,19 @@ public class RestoreFileWindow extends JDialog {
         });
 
 
-        DefaultMutableTreeNode rootTreeNode = registry.buildDeletedTree();
+        DefaultMutableTreeNode rootTreeNode = registry.buildEntryTree();
         final JTree tree = new JTree(rootTreeNode);
         if (rootTreeNode.getChildCount() == 0) {
-            field.setEnabled(false);
-            add(noDeleted);
+            searchField.setEnabled(false);
+            add(noBackupFilesLabel);
         }
         expandTree(tree);
         tree.setLayout(null);
 //        tree.setBounds(10, 30, 340, 350);
         tree.setRootVisible(false);
         tree.setEditable(false);
-        tree.setCellRenderer(new RestoreCellRenderer(field));
-        field.addKeyListener((OnKeyReleased) e -> {
+        tree.setCellRenderer(new SearchableTreeCellRenderer(searchField));
+        searchField.addKeyListener((OnKeyReleased) e -> {
             // update and expand tree
             DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
             model.nodeStructureChanged((TreeNode) model.getRoot());
@@ -128,50 +128,126 @@ public class RestoreFileWindow extends JDialog {
         add(close);
 
 
-        final JLabel permanent = new JLabel(new ImageIcon(Constants.getAsset("permanent.png")));
-        permanent.setLayout(null);
-        permanent.setBounds(91, 390, 154, 39);
-        permanent.setBackground(Color.black);
-        permanent.setEnabled(false);
-        permanent.addMouseListener((OnMouseClick) e -> {
-            if (permanent.isEnabled()) {
+        final JLabel permanentDeleteButton = new JLabel(new ImageIcon(Constants.getAsset("permanent.png")));
+        permanentDeleteButton.setLayout(null);
+        permanentDeleteButton.setBounds(91, 390, 40, 39);
+        permanentDeleteButton.setBackground(Color.black);
+        permanentDeleteButton.setEnabled(false);
+        permanentDeleteButton.addMouseListener((OnMouseClick) e -> {
+            if (permanentDeleteButton.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                 PbxEntry entry = (PbxEntry) node.getUserObject();
 
-                registry.permanentDelete(entry);
-                dispose();
-                RestoreFileWindow.getInstance(registry);
+                if (JOptionPane.showConfirmDialog(
+                        null,
+                        "Are you sure you wish to permanently delete '" + entry.realName() + "'?\nThis file and its " +
+                                "backup copies will be deleted immediately. You cannot undo this action.",
+                        "Confirm Cancel",
+                        JOptionPane.YES_NO_OPTION,
+                        JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION) {
+
+                    registry.permanentDelete(entry);
+                    dispose();
+                    RestoreFileWindow.getInstance(registry);
+
+                } else {
+                    setVisible(true);
+                }
             }
         });
-        add(permanent);
+        add(permanentDeleteButton);
 
 
-        final JLabel action = new JLabel(new ImageIcon(Constants.getAsset("restore.png")));
-        action.setLayout(null);
-        action.setBounds(3, 390, 85, 39);
-        action.setBackground(Color.black);
-        action.setEnabled(false);
-        action.addMouseListener((OnMouseClick) e -> {
-            if (action.isEnabled()) {
+        final JLabel configBackupsButton = new JLabel(new ImageIcon(Constants.getAsset("config.png")));
+        configBackupsButton.setLayout(null);
+        configBackupsButton.setBounds(134, 390, 40, 39);
+        configBackupsButton.setBackground(Color.black);
+        configBackupsButton.setEnabled(false);
+        configBackupsButton.addMouseListener((OnMouseClick) e -> {
+            if (configBackupsButton.isEnabled()) {
                 DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
                 PbxEntry entry = (PbxEntry) node.getUserObject();
-                registry.showPair(entry);
+                if (entry instanceof PbxFile) {
+                    PbxFile pbxFile = (PbxFile) entry;
+
+                    JFrame frame = new JFrame("Choose backup policy");
+                    String option = JOptionPane.showInputDialog(frame,
+                            "Choose below the backup policy for this file:",
+                            "Choose backup",
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            PbxFile.BackupPolicy.values(),
+                            pbxFile.getBackupPolicy()).toString();
+
+                    if (option == null) {
+                        setVisible(true);
+                        return;
+                    }
+                    PbxFile.BackupPolicy pickedPolicy = PbxFile.BackupPolicy.valueOf(option);
+                    pbxFile.setBackupPolicy(pickedPolicy);
+                }
+                setVisible(true);
+            }
+        });
+        add(configBackupsButton);
+
+
+        final JLabel restoreBackupButton = new JLabel(new ImageIcon(Constants.getAsset("restore.png")));
+        restoreBackupButton.setLayout(null);
+        restoreBackupButton.setBounds(3, 390, 85, 39);
+        restoreBackupButton.setBackground(Color.black);
+        restoreBackupButton.setEnabled(false);
+        restoreBackupButton.addMouseListener((OnMouseClick) e -> {
+            if (restoreBackupButton.isEnabled()) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+                PbxEntry entry = (PbxEntry) node.getUserObject();
+                if (entry instanceof PbxFolder) {
+                    registry.restoreFolderFromEntry((PbxFolder) entry);
+
+                } else if (entry instanceof PbxFile) {
+                    PbxFile pbxFile = (PbxFile) entry;
+                    java.util.List<String> snapshots = pbxFile.snapshotsToString();
+
+                    JFrame frame = new JFrame("Choose backup");
+                    Object option = JOptionPane.showInputDialog(frame,
+                            "Choose below what backup snapshot would you like restore:",
+                            "Choose backup",
+                            JOptionPane.QUESTION_MESSAGE,
+                            null,
+                            snapshots.toArray(),
+                            snapshots.get(0));
+
+                    if (option == null) {
+                        setVisible(true);
+                        return;
+                    }
+                    int pickedIndex = snapshots.indexOf(option.toString());
+                    registry.restoreFileFromEntry((PbxFile) entry, pickedIndex);
+                }
                 dispose();
             }
         });
-        add(action);
+        add(restoreBackupButton);
 
 
         tree.addMouseListener((OnMouseClick) e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null) {
                 PbxEntry entry = (PbxEntry) node.getUserObject();
-                if (entry.isHidden()) {
-                    permanent.setEnabled(true);
-                    action.setEnabled(true);
+                if ((entry instanceof PbxFolder && entry.areNativeFilesDeleted())) {
+                    permanentDeleteButton.setEnabled(true);
+                    restoreBackupButton.setEnabled(true);
+                    configBackupsButton.setEnabled(false);
+
+                } else if (entry instanceof PbxFile) {
+                    permanentDeleteButton.setEnabled(true);
+                    restoreBackupButton.setEnabled(true);
+                    configBackupsButton.setEnabled(true);
+
                 } else {
-                    permanent.setEnabled(false);
-                    action.setEnabled(false);
+                    permanentDeleteButton.setEnabled(false);
+                    restoreBackupButton.setEnabled(false);
+                    configBackupsButton.setEnabled(false);
                 }
             }
         });
@@ -230,23 +306,23 @@ public class RestoreFileWindow extends JDialog {
     }
 
 
-    private class RestoreCellRenderer extends DefaultTreeCellRenderer {
+    private class SearchableTreeCellRenderer extends DefaultTreeCellRenderer {
 
-        private final JTextField field;
+        private final JTextField searchfield;
 
-        public RestoreCellRenderer(JTextField field) {
-            this.field = field;
+        public SearchableTreeCellRenderer(JTextField searchField) {
+            this.searchfield = searchField;
         }
 
         @Override
         public Component getTreeCellRendererComponent(
                 JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 
-            // processing search functionality getFirst and rendering later
-            String search = field.getText();
+            // process search functionality
+            String search = searchfield.getText().toLowerCase();
             String query = value.toString();
             StringBuffer html = new StringBuffer("<html>");
-            Matcher m = Pattern.compile(Pattern.quote(search)).matcher(query);
+            Matcher m = Pattern.compile(Pattern.quote(search), Pattern.CASE_INSENSITIVE).matcher(query);
             while (m.find()) {
                 m.appendReplacement(html, "<b>" + m.group() + "</b>");
                 m.appendTail(html).append("</html>");
@@ -254,20 +330,19 @@ public class RestoreFileWindow extends JDialog {
             super.getTreeCellRendererComponent(tree, html.toString(), sel, expanded, leaf, row, hasFocus);
             tree.setRowHeight(32);
 
-            // rendering font and ASSETS
+
             PbxEntry entry = (PbxEntry) ((DefaultMutableTreeNode) value).getUserObject();
             setFont(Constants.FONT.deriveFont(13f));
 
-
             if (entry instanceof PbxFile) {
-                if (entry.isHidden()) {
+                if (entry.areNativeFilesDeleted()) {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of deleted file
                     setForeground(Color.gray);
                 } else {
                     setIcon(new ImageIcon(Constants.getAsset("file.png"))); // image of normal file
                 }
             } else if (entry instanceof PbxFolder) {
-                if (entry.isHidden()) {
+                if (entry.areNativeFilesDeleted()) {
                     setIcon(new ImageIcon(Constants.getAsset("folder.png"))); // image of deleted file
                     setForeground(Color.gray);
                 } else {
