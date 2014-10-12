@@ -131,15 +131,20 @@ public class NewRegistryWindow extends JFrame {
 
     private void go2() {
         try {
-            String algorithm = combo1.getSelectedItem().toString();
+            String encryptionAlgorithm = combo1.getSelectedItem().toString();
+            String cipherMode = combo2.getSelectedItem().toString();
+
+            String algorithm = encryptionAlgorithm + "/" + cipherMode + "/" + "PKCS5Padding";
 
             // registry is completely new -> generate the single symmetric key to be used from now on by all users
-            KeyGenerator keygen = KeyGenerator.getInstance(algorithm);
-            KeyGenerator integrityKeygen = KeyGenerator.getInstance("HmacSHA512");
-            addInstance(keygen.generateKey(), integrityKeygen.generateKey(), algorithm, true);
+            KeyGenerator pairKeyGen = KeyGenerator.getInstance(encryptionAlgorithm);
+            pairKeyGen.init(256);
+            KeyGenerator integrityKeyGen = KeyGenerator.getInstance("HmacSHA512");
+            addInstance(pairKeyGen.generateKey(), integrityKeyGen.generateKey(), algorithm, true);
 
         } catch (GeneralSecurityException ex) {
-            logger.error(ex.toString());
+            logger.info(ex.getMessage(), ex);
+            JOptionPane.showMessageDialog(this, ex.toString());
         }
     }
 
@@ -259,8 +264,7 @@ public class NewRegistryWindow extends JFrame {
                 }, 2 * 1000 * 60);
 
             } catch (IOException ex) {
-                logger.error(ex.toString());
-                ex.printStackTrace();
+                logger.info(ex.getMessage(), ex);
             }
         });
     }
@@ -283,6 +287,7 @@ public class NewRegistryWindow extends JFrame {
             }
 
         } catch (ProtException | IOException | GeneralSecurityException | AWTException ex) {
+            logger.info(ex.getMessage(), ex);
             JOptionPane.showMessageDialog(this, ex.toString());
         }
     }
@@ -458,7 +463,7 @@ public class NewRegistryWindow extends JFrame {
             JXLabel info = new JXLabel("Monitor another shared folder for Protbox protection...");
             info.setLineWrap(true);
             info.setFont(Constants.FONT.deriveFont(13f));
-            info.setBounds(20, 150, 680, 20);
+            info.setBounds(20, 150, 680, SPACING);
             add(info);
 
             int newSpace = SPACING;
@@ -475,15 +480,15 @@ public class NewRegistryWindow extends JFrame {
             add(label3);
             add(combo1);
 
-            JLabel label4 = new JLabel("Padding: ");
+            JLabel label4 = new JLabel("Cipher Mode: ");
             label4.setFont(Constants.FONT);
             label4.setBounds(250, SPACING + 93, 80, 30);
             combo2 = new JComboBox<>();
-            combo2.setBounds(310, SPACING + 100, 120, 20);
-            combo2.addItem("PKCS5Padding");
-            combo2.addItem("NoPadding");
-//            add(label4); // NOT IMPLEMENTED
-//            add(combo2); // NOT IMPLEMENTED
+            combo2.setBounds(340, SPACING + 100, 120, 20);
+            combo2.addItem("ECB");
+            combo2.addItem("CBC");
+            add(label4);
+            add(combo2);
 
 
             JButton previous = new JButton("< Previous");

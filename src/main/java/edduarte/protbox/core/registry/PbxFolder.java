@@ -2,6 +2,7 @@ package edduarte.protbox.core.registry;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * PRegFolder is a entry that structures a folder in the Registry. Other than having the same
@@ -51,8 +52,8 @@ public final class PbxFolder extends PbxEntry implements Serializable {
      *
      * @return a iterable structure of sub-folders that are contained in this folder.
      */
-    Collection<PbxFolder> getSubFolders() {
-        return Collections.unmodifiableCollection(subFolders);
+    Stream<PbxFolder> getSubFolders() {
+        return subFolders.stream();
     }
 
 
@@ -61,8 +62,8 @@ public final class PbxFolder extends PbxEntry implements Serializable {
      *
      * @return a iterable structure of sub-files that are contained in this folder.
      */
-    Collection<PbxFile> getSubFiles() {
-        return Collections.unmodifiableCollection(subFiles);
+    Stream<PbxFile> getSubFiles() {
+        return subFiles.stream();
     }
 
 

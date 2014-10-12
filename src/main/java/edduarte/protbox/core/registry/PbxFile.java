@@ -100,7 +100,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
             Date lastModifiedDate = new Date(snapshotFile.lastModified());
             snapshotStack.push(new Snapshot(fileData, fileSize, lastModifiedDate));
 
-        } catch (IOException | GeneralSecurityException ex) {
+        } catch (IOException ex) {
             throw new ProtException(ex);
         }
     }
@@ -128,7 +128,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
             snapshotFile.setLastModified(snapshot.getSnapshotLastModifiedDate().getTime());
 //            snapshotFile.setLastModified(new Date().getTime());
 
-        } catch (IOException | GeneralSecurityException ex) {
+        } catch (IOException ex) {
             throw new ProtException(ex);
         }
     }

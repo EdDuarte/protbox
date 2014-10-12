@@ -308,10 +308,10 @@ public class RestoreFileWindow extends JDialog {
 
     private class SearchableTreeCellRenderer extends DefaultTreeCellRenderer {
 
-        private final JTextField searchfield;
+        private final JTextField searchField;
 
         public SearchableTreeCellRenderer(JTextField searchField) {
-            this.searchfield = searchField;
+            this.searchField = searchField;
         }
 
         @Override
@@ -319,7 +319,7 @@ public class RestoreFileWindow extends JDialog {
                 JTree tree, Object value, boolean sel, boolean expanded, boolean leaf, int row, boolean hasFocus) {
 
             // process search functionality
-            String search = searchfield.getText().toLowerCase();
+            String search = searchField.getText().toLowerCase();
             String query = value.toString();
             StringBuffer html = new StringBuffer("<html>");
             Matcher m = Pattern.compile(Pattern.quote(search), Pattern.CASE_INSENSITIVE).matcher(query);

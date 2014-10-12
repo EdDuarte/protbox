@@ -21,11 +21,11 @@ import java.io.Serializable;
 public class PbxPair implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private final String SHARED_FOLDER_PATH;
-    private final String PAIR_ALGORITHM;
-    private final SecretKey PAIR_KEY;
-    private final SecretKey INTEGRITY_KEY;
-    private String PROT_FOLDER_PATH;
+    private String protFolderPath;
+    private final String sharedFolderPath;
+    private final String pairAlgorithm;
+    private final SecretKey pairKey;
+    private final SecretKey integrityKey;
 
 
     public PbxPair(final String sharedFolderPath,
@@ -36,11 +36,11 @@ public class PbxPair implements Serializable {
 
         File sharedPathFile = new File(sharedFolderPath);
         File protPathFile = new File(protFolderPath);
-        this.SHARED_FOLDER_PATH = sharedPathFile.getAbsolutePath();
-        this.PROT_FOLDER_PATH = protPathFile.getAbsolutePath();
-        this.PAIR_ALGORITHM = cipherAlgorithm;
-        this.PAIR_KEY = cipherKey;
-        this.INTEGRITY_KEY = integrityKey;
+        this.sharedFolderPath = sharedPathFile.getAbsolutePath();
+        this.protFolderPath = protPathFile.getAbsolutePath();
+        this.pairAlgorithm = cipherAlgorithm;
+        this.pairKey = cipherKey;
+        this.integrityKey = integrityKey;
     }
 
 
@@ -48,7 +48,7 @@ public class PbxPair implements Serializable {
      * Gets the configured Shared shared folder path where the encrypted files will be.
      */
     public String getSharedFolderPath() {
-        return SHARED_FOLDER_PATH;
+        return sharedFolderPath;
     }
 
 
@@ -56,7 +56,7 @@ public class PbxPair implements Serializable {
      * Gets the configured Shared shared folder where the encrypted files will be.
      */
     public File getSharedFolderFile() {
-        return new File(SHARED_FOLDER_PATH);
+        return new File(sharedFolderPath);
     }
 
 
@@ -64,7 +64,7 @@ public class PbxPair implements Serializable {
      * Gets the configured Prot folder path where every file from the Shared folder will be stored in decrypted form.
      */
     public String getProtFolderPath() {
-        return PROT_FOLDER_PATH;
+        return protFolderPath;
     }
 
 
@@ -72,7 +72,7 @@ public class PbxPair implements Serializable {
      * Sets the configured Shared shared folder path where the encrypted files will be.
      */
     public void setProtFolderPath(String protFolderPath) {
-        this.PROT_FOLDER_PATH = protFolderPath;
+        this.protFolderPath = protFolderPath;
     }
 
 
@@ -80,7 +80,7 @@ public class PbxPair implements Serializable {
      * Gets the configured Prot folder where every file from the Shared folder will be stored in decrypted form.
      */
     public File getProtFolderFile() {
-        return new File(PROT_FOLDER_PATH);
+        return new File(protFolderPath);
     }
 
 
@@ -89,7 +89,7 @@ public class PbxPair implements Serializable {
      * per execution, since the Cipher object cannot be serialized.
      */
     public String getPairAlgorithm() {
-        return PAIR_ALGORITHM;
+        return pairAlgorithm;
     }
 
 
@@ -97,7 +97,7 @@ public class PbxPair implements Serializable {
      * Gets the secret key used by this Pair for encryption and decryption of files' contents and names.
      */
     public SecretKey getPairKey() {
-        return PAIR_KEY;
+        return pairKey;
     }
 
 
@@ -105,13 +105,13 @@ public class PbxPair implements Serializable {
      * Gets the secret key used by this Pair for integrity checking of files' data.
      */
     public SecretKey getIntegrityKey() {
-        return INTEGRITY_KEY;
+        return integrityKey;
     }
 
 
     @Override
     public int hashCode() {
-        return SHARED_FOLDER_PATH.hashCode() * PROT_FOLDER_PATH.hashCode();
+        return sharedFolderPath.hashCode() * protFolderPath.hashCode();
     }
 
 
@@ -127,8 +127,8 @@ public class PbxPair implements Serializable {
 
         if (obj instanceof PbxPair) {
             PbxPair otherPair = (PbxPair) obj;
-            return SHARED_FOLDER_PATH.equalsIgnoreCase(otherPair.SHARED_FOLDER_PATH) &&
-                    PROT_FOLDER_PATH.equalsIgnoreCase(otherPair.PROT_FOLDER_PATH);
+            return sharedFolderPath.equalsIgnoreCase(otherPair.sharedFolderPath) &&
+                    protFolderPath.equalsIgnoreCase(otherPair.protFolderPath);
         }
 
         return false;

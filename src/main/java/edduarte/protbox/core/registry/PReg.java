@@ -19,17 +19,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
-import java.io.File;
-import java.io.IOException;
-import java.io.Serializable;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.List;
+import java.util.function.*;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Protbox Registry (or PReg for short) is a parallel control data structure that assures the
@@ -137,7 +139,7 @@ public final class PReg implements Serializable {
         }
 
         // starts the cipher according to the chosen algorithm
-        CIPHER = Cipher.getInstance(pair.getPairAlgorithm() + "/ECB/PKCS5Padding");
+        CIPHER = Cipher.getInstance(pair.getPairAlgorithm());
 
         // checks the registry periodically (every 2 seconds) and detects any changes made
         timerIndex = new Timer();
@@ -279,8 +281,8 @@ public final class PReg implements Serializable {
 
 
         // checking sub-files and sub-folders with entries (= already existed in the registry before checking)
-        Collection<PbxFile> subFiles = new ArrayList<>(folder.getSubFiles());
-        Collection<PbxFolder> subFolders = new ArrayList<>(folder.getSubFolders());
+        List<PbxFile> subFiles = folder.getSubFiles().collect(Collectors.toList());
+        List<PbxFolder> subFolders = folder.getSubFolders().collect(Collectors.toList());
 
         for (PbxFile f : subFiles) {
             File sharedFile = sharedMap.get(f.encodedName());
@@ -311,7 +313,7 @@ public final class PReg implements Serializable {
                     integrityCheck((PbxFolder) newEntry, sharedFile, protFile);
                 }
 
-            } catch (GeneralSecurityException ex) {
+            } catch (ProtException ex) {
                 logger.error("Error while checking shared file without pair " + sharedFile.getName(), ex);
             }
         }
@@ -328,7 +330,7 @@ public final class PReg implements Serializable {
                     integrityCheck((PbxFolder) newEntry, sharedFile, protFile);
                 }
 
-            } catch (GeneralSecurityException ex) {
+            } catch (ProtException ex) {
                 logger.error("Error while checking prot file without pair " + protFile.getName(), ex);
             }
         }
@@ -576,9 +578,8 @@ public final class PReg implements Serializable {
             try {
                 // checks if a deleted PbxFolder that represents the files already exists
                 pair = parent.getSubFolders()
-                        .stream()
                         .filter(PbxEntry::areNativeFilesDeleted)
-                        .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
+                        .filter(p -> fromFolder == FolderOption.PROT ? p.realName().equals(realName) : p.encodedName().equals(encodedName))
                         .findFirst()
                         .get();
 
@@ -603,9 +604,8 @@ public final class PReg implements Serializable {
             try {
                 // checks if a deleted PbxFile that represents the files already exists
                 pair = parent.getSubFiles()
-                        .stream()
                         .filter(PbxEntry::areNativeFilesDeleted)
-                        .filter(p -> p.realName().equals(realName) || p.encodedName().equals(encodedName))
+                        .filter(p -> fromFolder == FolderOption.PROT ? p.realName().equals(realName) : p.encodedName().equals(encodedName))
                         .findFirst()
                         .get();
 
@@ -628,32 +628,39 @@ public final class PReg implements Serializable {
 
     // -- NAME CONVERSION METHODS --
 
-    private String convertEncodedNameToRealName(String encodedName) throws GeneralSecurityException {
-        Cipher c = Cipher.getInstance(pair.getPairAlgorithm());
-        c.init(Cipher.DECRYPT_MODE, pair.getPairKey());
+    private String convertEncodedNameToRealName(String encodedName) throws ProtException {
+
+        // perform replacements from a RFC 3548 compliant name to a Base64 compliant name
+        String rfc3548Name = encodedName.replaceAll("-", "/").replaceAll("_", "+");
+        byte[] decryptedNameData = decrypt(Base64.decodeBase64(rfc3548Name));
+
         try {
-            return new String(c.doFinal(Base64.decodeBase64(encodedName.replaceAll("-", "/"))), "UTF8");
+            return new String(decryptedNameData, "UTF-8");
 
         } catch (UnsupportedEncodingException ex) {
-            return new String(c.doFinal(Base64.decodeBase64(encodedName.replaceAll("-", "/"))));
-
+            return new String(decryptedNameData);
         }
     }
 
 
-    private String convertRealNameToEncodedName(String realName) throws GeneralSecurityException {
-        Cipher c = Cipher.getInstance(pair.getPairAlgorithm());
-        c.init(Cipher.ENCRYPT_MODE, pair.getPairKey());
+    private String convertRealNameToEncodedName(String realName) throws ProtException {
+        String encodedName;
+
         try {
-            return new String(Base64.encodeBase64(c.doFinal(realName.getBytes("UTF8"))), "UTF8").replaceAll("/", "-");
+            byte[] encryptedNameData = encrypt(realName.getBytes("UTF-8"));
+            encodedName = new String(Base64.encodeBase64(encryptedNameData), "UTF-8");
 
         } catch (UnsupportedEncodingException ex) {
-            return new String(Base64.encodeBase64(c.doFinal(realName.getBytes()))).replaceAll("/", "-");
-
+            byte[] encryptedNameData = encrypt(realName.getBytes());
+            encodedName = new String(Base64.encodeBase64(encryptedNameData));
         }
+
+        // perform replacements from a Base64 compliant name to a RFC 3548 compliant name
+        return encodedName.replaceAll("/", "-").replaceAll("\\+", "_");
     }
 
-    private String realNameToConflicted(String realName) throws GeneralSecurityException {
+
+    private String realNameToConflicted(String realName) {
         String conflictText = " (conflicted copy from " + user.getName() + ")";
 
         int dotIndex = realName.lastIndexOf(".");
@@ -681,7 +688,7 @@ public final class PReg implements Serializable {
     }
 
 
-    public void delete(Path filePath, FolderOption fromFolder) throws ProtException {
+    public void delete(Path filePath, FolderOption fromFolder) {
         if (Constants.verbose) logger.info("Deleting file " + filePath);
 
         PbxFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
@@ -829,9 +836,27 @@ public final class PReg implements Serializable {
 
     // -- CIPHER METHODS --
 
-    public byte[] encrypt(byte[] data) throws GeneralSecurityException {
-        CIPHER.init(Cipher.ENCRYPT_MODE, pair.getPairKey());
-        return CIPHER.doFinal(data);
+    public byte[] encrypt(byte[] decryptedData) throws ProtException {
+        try {
+            CIPHER.init(Cipher.ENCRYPT_MODE, pair.getPairKey());
+
+            byte[] encryptedData = CIPHER.doFinal(decryptedData);
+            byte[] iv = CIPHER.getIV();
+
+            if (iv != null) {
+                byte[] result = new byte[16 + encryptedData.length];
+                System.arraycopy(iv, 0, result, 0, 16);
+                System.arraycopy(encryptedData, 0, result, 16, encryptedData.length);
+                return result;
+
+            } else {
+                return encryptedData;
+            }
+
+        } catch (GeneralSecurityException ex) {
+            logger.info(ex.getMessage(), ex);
+            throw new ProtException(ex);
+        }
 
         // DEPRECATED: PUT REAL SIZE AT THE END OF FILE WITHIN 4 BYTES FOR PADDING SPECIFICATION
 //        try(ByteArrayInputStream in = new ByteArrayInputStream(data)){
@@ -874,9 +899,30 @@ public final class PReg implements Serializable {
     }
 
 
-    public byte[] decrypt(byte[] data) throws GeneralSecurityException {
-        CIPHER.init(Cipher.DECRYPT_MODE, pair.getPairKey());
-        return CIPHER.doFinal(data);
+    public byte[] decrypt(byte[] encryptedData) throws ProtException {
+        try {
+            byte[] dataToDecrypt;
+            if (pair.getPairAlgorithm().contains("CBC")) {
+                byte[] iv = new byte[16];
+                System.arraycopy(encryptedData, 0, iv, 0, 16);
+
+                int dataToDecryptLength = encryptedData.length - 16;
+                dataToDecrypt = new byte[dataToDecryptLength];
+                System.arraycopy(encryptedData, 16, dataToDecrypt, 0, dataToDecryptLength);
+
+                CIPHER.init(Cipher.DECRYPT_MODE, pair.getPairKey(), new IvParameterSpec(iv));
+
+            } else {
+                CIPHER.init(Cipher.DECRYPT_MODE, pair.getPairKey());
+                dataToDecrypt = encryptedData;
+            }
+
+            return CIPHER.doFinal(dataToDecrypt);
+
+        } catch (GeneralSecurityException ex) {
+            logger.info(ex.getMessage(), ex);
+            throw new ProtException(ex);
+        }
 
         // DEPRECATED: GET REAL SIZE AT THE END OF FILE WITHIN 4 BYTES FOR PADDING SPECIFICATION
 //        // get real size from the last 4 bytes of the file
@@ -998,7 +1044,7 @@ public final class PReg implements Serializable {
 
     private StringBuffer print(StringBuffer sb, PbxFolder root, String originalIndent, String indent) {
 
-        for (PbxFile f : root.getSubFiles()) {
+        root.getSubFiles().forEach(f -> {
             sb.append(indent);
             sb.append(f.realName());
             sb.append(" (file");
@@ -1008,11 +1054,10 @@ public final class PReg implements Serializable {
 
             } else {
                 sb.append(")\n");
-
             }
-        }
+        });
 
-        for (PbxFolder f : root.getSubFolders()) {
+        root.getSubFolders().forEach(f -> {
             if (f.parentFolder() != null) {
                 sb.append(indent);
                 sb.append(f.realName());
@@ -1024,10 +1069,9 @@ public final class PReg implements Serializable {
                 sb.append(indent);
                 sb.append(f.realName());
                 sb.append(" (folder, parent:ROOT)\n");
-
             }
             print(sb, f, originalIndent, indent + originalIndent);
-        }
+        });
 
         return sb;
     }
