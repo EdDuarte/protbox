@@ -1,6 +1,23 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.core;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.File;
 import java.io.Serializable;
 
@@ -15,32 +32,33 @@ import java.io.Serializable;
  * the corresponding Shared folder) or (ii) imported by Protbox from other users sharing the
  * corresponding Shared folder (when the Shared folder is not empty).
  *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @version 2.0
  */
 public class PbxPair implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
-    private String protFolderPath;
     private final String sharedFolderPath;
     private final String pairAlgorithm;
     private final SecretKey pairKey;
     private final SecretKey integrityKey;
+    private String protFolderPath;
 
 
     public PbxPair(final String sharedFolderPath,
                    final String protFolderPath,
                    final String cipherAlgorithm,
-                   final SecretKey cipherKey,
-                   final SecretKey integrityKey) {
-
+                   final SecretKey cipherKey/*,
+                   final SecretKey integrityKey*/) {
         File sharedPathFile = new File(sharedFolderPath);
         File protPathFile = new File(protFolderPath);
         this.sharedFolderPath = sharedPathFile.getAbsolutePath();
         this.protFolderPath = protPathFile.getAbsolutePath();
         this.pairAlgorithm = cipherAlgorithm;
         this.pairKey = cipherKey;
-        this.integrityKey = integrityKey;
+//        this.integrityKey = integrityKey;
+        this.integrityKey = new SecretKeySpec(pairKey.getEncoded(), "HmacSHA512");
     }
 
 

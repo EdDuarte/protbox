@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.core.synchronization;
 
 import edduarte.protbox.core.Constants;
@@ -6,9 +22,9 @@ import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.core.registry.PbxEntry;
 import edduarte.protbox.core.registry.PbxFile;
 import edduarte.protbox.core.registry.PbxFolder;
-import edduarte.protbox.exception.ProtException;
+import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.utils.tuples.Duo;
+import edduarte.protbox.utils.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +35,7 @@ import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public final class SyncModule {
@@ -96,7 +112,7 @@ public final class SyncModule {
 
                     return true;
 
-                } catch (ProtException ex) {
+                } catch (ProtboxException ex) {
                     if (Constants.verbose) {
                         logger.error("Error while finding conflicted synchronization requests.", ex);
                     }
@@ -108,7 +124,7 @@ public final class SyncModule {
     }
 
 
-    public static Duo<List<PbxEntry>> removeSyncPairsForReg(final PReg reg) {
+    public static Pair<List<PbxEntry>> removeSyncEntriesOfRegistry(final PReg reg) {
         List<PbxEntry> toProtRemoved = new ArrayList<>();
         List<PbxEntry> toSharedRemoved = new ArrayList<>();
 
@@ -130,7 +146,7 @@ public final class SyncModule {
             logger.info("Removed entries of registry " + reg.id);
         }
 
-        return Duo.of(toProtRemoved, toSharedRemoved);
+        return Pair.of(toProtRemoved, toSharedRemoved);
     }
 
 
@@ -139,32 +155,21 @@ public final class SyncModule {
             @Override
             public void run() {
                 try {
-//                    byte[] data = FileUtils.readFileToByteArray(a);
-//                    if (folderOfA.equals(FolderOption.SHARED))
-//                        data = directory.decrypt(data);
-//                    else if (folderOfA.equals(FolderOption.PROT))
-//                        data = directory.encrypt(data);
-//
-//                    FileUtils.writeByteArrayToFile(b, data);
-//                    long newLM = a.lastModified();
-//                    entry.setLastModified(new Date(newLM));
-//                    b.setLastModified(newLM);
-
                     entry.createSnapshotFromFile(a, folderOfA);
                     entry.writeSnapshotToFile(0, b, folderOfA.inverse());
 
-                } catch (ProtException ex) {
-                    if (Constants.verbose) {
-                        logger.error("Error while syncing file " + a.getName() +
-                                " from " + folderOfA.name().toLowerCase() + " folder.", ex);
-                    }
+                } catch (ProtboxException ex) {
+                    logger.error("Error while syncing file " + a.getName() +
+                            " from " + folderOfA.name().toLowerCase() + " folder.", ex);
                 }
             }
         }.start();
     }
 
 
-    // Thread that deals with shared to prot pair movements
+    /**
+     * Thread that deals with shared to prot pair synchronization processes
+     */
     private static class SharedToProt implements Runnable {
         @Override
         public void run() {
@@ -208,7 +213,9 @@ public final class SyncModule {
         }
     }
 
-    // Thread that deals with prot to shared pair movements
+    /**
+     * Thread that deals with prot to shared pair synchronization processes
+     */
     private static class ProtToShared implements Runnable {
         @Override
         public void run() {

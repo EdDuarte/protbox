@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.core;
 
 import edduarte.protbox.Main;
@@ -18,16 +34,13 @@ import java.util.*;
 /**
  * Stores common elements or default values used throughout the application.
  *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public final class Constants {
 
-
     public static final char SPECIAL_FILE_FIRST_CHAR = '_';
-    public static final String SPECIAL_FILE_ASK_PREFIX = SPECIAL_FILE_FIRST_CHAR + "ask";
-    public static final String SPECIAL_FILE_INVALID_PREFIX = SPECIAL_FILE_FIRST_CHAR + "invalid";
-    public static final String SPECIAL_FILE_KEY_PREFIX = SPECIAL_FILE_FIRST_CHAR + "";
+
     public static final Font FONT;
 
     static {
@@ -50,6 +63,7 @@ public final class Constants {
 
         FONT = loadedFont;
     }
+
     public static final String INSTALL_DIR = new File(
             Constants.class.getProtectionDomain()
                     .getCodeSource()
@@ -59,14 +73,20 @@ public final class Constants {
             .getParentFile()
             .getAbsolutePath()
             .replaceAll("%20", " ");
+
     public static final String PROVIDERS_DIR = new File(INSTALL_DIR, "providers").getAbsolutePath();
+
     public static final String REGISTRIES_DIR = new File(INSTALL_DIR, "registries").getAbsolutePath();
+
     /**
      * Returns the standard Date format to be used in this application.
      */
     private static final DateFormat DATE_FORMAT = new SimpleDateFormat("dd-MM-yyyy, HH:mm:ss");
+
     private static final Map<String, BufferedImage> cachedAssets = new HashMap<>();
+
     private static final FileDeleteStrategy deleter = FileDeleteStrategy.FORCE;
+
     public static boolean verbose = false;
 
     public static String formatDate(Date date) {
@@ -112,7 +132,6 @@ public final class Constants {
         }
     }
 
-
     /**
      * Moves all contents from the first specified registry to the second specified
      * registry, overriding if it already exists!
@@ -137,7 +156,6 @@ public final class Constants {
             throw new IOException("Specified registry is not a folder.", ex);
         }
     }
-
 
     /**
      * Get the current date and time

@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.ui.windows;
 
 import com.google.common.collect.Lists;
@@ -6,9 +22,9 @@ import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.core.registry.PbxEntry;
 import edduarte.protbox.core.registry.PbxFile;
 import edduarte.protbox.core.registry.PbxFolder;
-import edduarte.protbox.ui.listeners.OnKeyReleased;
-import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
+import edduarte.protbox.utils.listeners.OnKeyReleased;
+import edduarte.protbox.utils.listeners.OnMouseClick;
 import org.apache.commons.lang3.SystemUtils;
 import org.jdesktop.swingx.border.DropShadowBorder;
 import org.jdesktop.xswingx.PromptSupport;
@@ -17,10 +33,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeNode;
+import javax.swing.tree.*;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
@@ -31,13 +44,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public class RestoreFileWindow extends JDialog {
     private static final Logger logger = LoggerFactory.getLogger(RestoreFileWindow.class);
-
-    private static final Map<PReg, RestoreFileWindow> instances = new HashMap<>();
 
     private RestoreFileWindow(final PReg registry) {
         super();
@@ -94,17 +105,18 @@ public class RestoreFileWindow extends JDialog {
 
         DefaultMutableTreeNode rootTreeNode = registry.buildEntryTree();
         final JTree tree = new JTree(rootTreeNode);
+        tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         if (rootTreeNode.getChildCount() == 0) {
             searchField.setEnabled(false);
             add(noBackupFilesLabel);
         }
         expandTree(tree);
         tree.setLayout(null);
-//        tree.setBounds(10, 30, 340, 350);
         tree.setRootVisible(false);
         tree.setEditable(false);
         tree.setCellRenderer(new SearchableTreeCellRenderer(searchField));
         searchField.addKeyListener((OnKeyReleased) e -> {
+
             // update and expand tree
             DefaultTreeModel model = (DefaultTreeModel) tree.getModel();
             model.nodeStructureChanged((TreeNode) model.getRoot());
@@ -171,19 +183,19 @@ public class RestoreFileWindow extends JDialog {
                     PbxFile pbxFile = (PbxFile) entry;
 
                     JFrame frame = new JFrame("Choose backup policy");
-                    String option = JOptionPane.showInputDialog(frame,
+                    Object option = JOptionPane.showInputDialog(frame,
                             "Choose below the backup policy for this file:",
                             "Choose backup",
                             JOptionPane.QUESTION_MESSAGE,
                             null,
                             PbxFile.BackupPolicy.values(),
-                            pbxFile.getBackupPolicy()).toString();
+                            pbxFile.getBackupPolicy());
 
                     if (option == null) {
                         setVisible(true);
                         return;
                     }
-                    PbxFile.BackupPolicy pickedPolicy = PbxFile.BackupPolicy.valueOf(option);
+                    PbxFile.BackupPolicy pickedPolicy = PbxFile.BackupPolicy.valueOf(option.toString());
                     pbxFile.setBackupPolicy(pickedPolicy);
                 }
                 setVisible(true);
@@ -207,6 +219,10 @@ public class RestoreFileWindow extends JDialog {
                 } else if (entry instanceof PbxFile) {
                     PbxFile pbxFile = (PbxFile) entry;
                     java.util.List<String> snapshots = pbxFile.snapshotsToString();
+                    if (snapshots.isEmpty()) {
+                        setVisible(true);
+                        return;
+                    }
 
                     JFrame frame = new JFrame("Choose backup");
                     Object option = JOptionPane.showInputDialog(frame,

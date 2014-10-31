@@ -1,9 +1,25 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.ui.listeners.OnKeyReleased;
-import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.Utils;
+import edduarte.protbox.utils.listeners.OnKeyReleased;
+import edduarte.protbox.utils.listeners.OnMouseClick;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.border.DropShadowBorder;
 import org.slf4j.Logger;
@@ -20,7 +36,7 @@ import java.util.Vector;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public class ProviderListWindow extends JFrame {
@@ -109,15 +125,6 @@ public class ProviderListWindow extends JFrame {
                 }
 
                 list.setFixedCellHeight(32);
-
-//                String providerName = ((String) value);
-//                setFont(new Font(Constants.FONT, Font.PLAIN, 13));
-//
-//                JLabel machineName = new JLabel();
-//                machineName.setText("Machine Name: " + user.getMachineName());
-//                machineName.setFont(new Font(Constants.FONT, Font.PLAIN, 12));
-//                machineName.setBounds(106, 90, 370, 50);
-//                add(machineName);
 
                 return label;
             }

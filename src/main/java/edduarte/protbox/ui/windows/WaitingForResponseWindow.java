@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.core.Constants;
@@ -9,20 +25,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public class WaitingForResponseWindow extends JFrame {
 
-    private final javax.swing.Timer displayTimer;
+    private final Timer displayTimer;
 
     private WaitingForResponseWindow() {
         super();
-        this.setTitle("Waiting for user's response...");
+        this.setTitle("Waiting for response...");
         this.setIconImage(Constants.getAsset("box.png"));
         this.setLayout(null);
 
-        JLabel title = new JLabel("Waiting for user's response...");
+        JLabel title = new JLabel("Waiting for response...");
         title.setBounds(10, 1, 250, 50);
         title.setFont(Constants.FONT);
         this.add(title);
@@ -39,7 +55,6 @@ public class WaitingForResponseWindow extends JFrame {
         this.getRootPane().setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
         Utils.setComponentLocationOnCenter(this);
         this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        this.setVisible(true);
 
         ActionListener listener = new ActionListener() {
             private int i = 0;
@@ -56,9 +71,11 @@ public class WaitingForResponseWindow extends JFrame {
             }
         };
 
-        displayTimer = new javax.swing.Timer(1000, listener);
+        displayTimer = new Timer(1000, listener);
         displayTimer.setInitialDelay(1);
         displayTimer.start();
+
+        this.setVisible(true);
     }
 
     public static WaitingForResponseWindow getInstance() {

@@ -1,4 +1,20 @@
-package edduarte.protbox.ui.listeners;
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package edduarte.protbox.utils.listeners;
 
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -16,8 +32,7 @@ import java.awt.event.KeyListener;
  * or typed. The relevant method in the listener
  * object is then invoked, and the <code>KeyEvent</code> is passed to it.
  *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
- * @version 1.0
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @see java.awt.event.KeyAdapter
  * @see java.awt.event.KeyEvent
  * @see <a href="http://java.sun.com/docs/books/tutorial/post1.0/ui/keylistener.html">Tutorial: Writing a Key Listener</a>

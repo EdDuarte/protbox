@@ -14,37 +14,25 @@
  * limitations under the License.
  */
 
-package edduarte.protbox.core.synchronization;
+package edduarte.protbox.core.keyexchange;
 
-import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.core.registry.PbxEntry;
+import java.io.Serializable;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
-final class SyncEntry {
-    final PReg reg;
-    final PbxEntry entry;
+public class Response implements Serializable {
 
-    SyncEntry(PReg reg, PbxEntry entry) {
-        this.reg = reg;
-        this.entry = entry;
-    }
+    private static final long serialVersionUID = 1L;
 
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == null) {
-            return false;
+    public final String directoryAlgorithm;
+    public final byte[] encryptedPairKey;
+//    public final byte[] encryptedIntegrityKey;
 
-        } else if (this == obj) {
-            return true;
-        }
-
-        if (obj instanceof SyncEntry) {
-            SyncEntry se = (SyncEntry) obj;
-            return this == se || this.reg.equals(se.reg) && this.entry.equals(se.entry);
-        }
-        return false;
+    public Response(String directoryAlgorithm, byte[] encryptedPairKey/*, byte[] encryptedIntegrityKey*/) {
+        this.directoryAlgorithm = directoryAlgorithm;
+        this.encryptedPairKey = encryptedPairKey;
+//        this.encryptedIntegrityKey = encryptedIntegrityKey;
     }
 }

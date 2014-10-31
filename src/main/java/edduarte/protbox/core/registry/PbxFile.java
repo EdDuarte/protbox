@@ -1,32 +1,51 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.core.registry;
 
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.FolderOption;
-import edduarte.protbox.exception.ProtException;
+import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.tuples.Triple;
 import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.GeneralSecurityException;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * PRegFile is a entry that structures a file in the Registry. Other than having the same
- * variables as {@link PbxEntry}, a fileFile is also represented by an array of bytes that contains
- * the data of the file. This array is only filled when the correspondent file in the native
- * folders are areNativeFilesDeleted.
+ * PbxFile is a entry that structures a file in the Registry. Other than having the same
+ * variables as {@link PbxEntry}, a PbxFile is also represented by a set of snapshots, each one
+ * representing a past state of the file's data, size and last modified date.
  *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public final class PbxFile extends PbxEntry implements Serializable {
+
+    private static final Logger logger = LoggerFactory.getLogger(PbxFile.class);
+
     private static final long serialVersionUID = 1L;
 
     private SnapshotStack snapshotStack;
@@ -84,13 +103,18 @@ public final class PbxFile extends PbxEntry implements Serializable {
     /**
      * Sets the data of the file to the specified data.
      */
-    public void createSnapshotFromFile(File snapshotFile, FolderOption fromFolder) throws ProtException {
-        System.out.println("-------------- " + snapshotFile.getName() + " " + new Date(snapshotFile.lastModified()).toString());
+    public void createSnapshotFromFile(File snapshotFile, FolderOption fromFolder) throws ProtboxException {
+        logger.info("-------------- " + snapshotFile.getName() + " " + new Date(snapshotFile.lastModified()).toString());
         try {
             byte[] fileData;
 
-            if (fromFolder == FolderOption.SHARED) {
-                fileData = parentRegistry.decrypt(FileUtils.readFileToByteArray(snapshotFile));
+            if (fromFolder.equals(FolderOption.SHARED)) {
+                try {
+                    fileData = parentRegistry.decrypt(FileUtils.readFileToByteArray(snapshotFile), true);
+                } catch (ProtboxException ex) {
+                    logger.info("There was a problem while decrypting. Ignoring file " + snapshotFile.getName() + ".", ex);
+                    return;
+                }
 
             } else {
                 fileData = FileUtils.readFileToByteArray(snapshotFile);
@@ -101,7 +125,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
             snapshotStack.push(new Snapshot(fileData, fileSize, lastModifiedDate));
 
         } catch (IOException ex) {
-            throw new ProtException(ex);
+            throw new ProtboxException(ex);
         }
     }
 
@@ -109,30 +133,33 @@ public final class PbxFile extends PbxEntry implements Serializable {
     /**
      * Sets the data of the file to the specified data.
      */
-    public void writeSnapshotToFile(int index, File snapshotFile, FolderOption toFolder) throws ProtException {
+    public void writeSnapshotToFile(int index, File snapshotFile, FolderOption toFolder) throws ProtboxException {
         Snapshot snapshot;
         try {
-            snapshot = snapshotStack.get(index);
+            snapshot = snapshotStack.remove(index);
+            snapshotStack.forcePush(snapshot);
 
         } catch (IndexOutOfBoundsException ex) {
             return;
         }
         try {
-            if (toFolder == FolderOption.SHARED) {
-                FileUtils.writeByteArrayToFile(snapshotFile, parentRegistry.encrypt(snapshot.getSnapshotData()));
+            if (toFolder.equals(FolderOption.SHARED)) {
+                FileUtils.writeByteArrayToFile(snapshotFile, parentRegistry.encrypt(snapshot.getSnapshotData(), true));
 
             } else {
                 FileUtils.writeByteArrayToFile(snapshotFile, snapshot.getSnapshotData());
             }
 
-            snapshotFile.setLastModified(snapshot.getSnapshotLastModifiedDate().getTime());
-//            snapshotFile.setLastModified(new Date().getTime());
+            snapshotFile.setLastModified(snapshot.getLastModifiedDate().getTime());
 
         } catch (IOException ex) {
-            throw new ProtException(ex);
+            throw new ProtboxException(ex);
         }
     }
 
+    public BackupPolicy getBackupPolicy() {
+        return backupPolicy;
+    }
 
     public void setBackupPolicy(BackupPolicy backupPolicy) {
         if (!backupPolicy.equals(BackupPolicy.Ask)) {
@@ -153,56 +180,19 @@ public final class PbxFile extends PbxEntry implements Serializable {
                     snapshotStack.removeLast();
                 }
             }
+        } else {
+            this.backupPolicy = backupPolicy;
         }
     }
-
-
-    public BackupPolicy getBackupPolicy() {
-        return backupPolicy;
-    }
-
 
     /**
      * Suggests Java Garbage Collector to stop storing this file's data.
      */
     void clearSnapshots() {
-//        Snapshot s = getLatestSnapshot();
-
         snapshotStack.clear();
         snapshotStack = null;
         System.gc();
-
-//        snapshotStack = new SnapshotStack();
-//        snapshotStack.push(s);
     }
-
-
-//    /**
-//     * Returns the file size of the file represented by this file.
-//     *
-//     * @return the file size of the file represented by this file.
-//     */
-//    public int getFileSize() {
-//        return getLatestSnapshot().length;
-//    }
-//
-//
-//    /**
-//     * Returns the last modified date of the file represented by this file.
-//     *
-//     * @return the last modified date of the file represented by this file.
-//     */
-//    public Date getLastModified() {
-//        return lastModified;
-//    }
-//
-//
-//    /**
-//     * Sets the last modified date of the file to the specified last modified date.
-//     */
-//    public void setLastModified(Date lastModified) {
-//        this.lastModified = lastModified;
-//    }
 
 
     @Override
@@ -229,15 +219,19 @@ public final class PbxFile extends PbxEntry implements Serializable {
     public static final class Snapshot implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private Triple<byte[], Long, Date> triple;
+        private final byte[] data;
+        private final long dataSize;
+        private final Date lastModified;
 
 
         /**
          * Constructor to instantiate a snapshot, which will be used for backup
          * and restoring purposes.
          */
-        private Snapshot(byte[] data, long dataSize, Date snapshotLastModified) {
-            this.triple = Triple.of(data, dataSize, snapshotLastModified);
+        private Snapshot(byte[] data, long dataSize, Date lastModified) {
+            this.data = data;
+            this.dataSize = dataSize;
+            this.lastModified = lastModified;
         }
 
 
@@ -251,37 +245,43 @@ public final class PbxFile extends PbxEntry implements Serializable {
 
 
         public byte[] getSnapshotData() {
-            return triple.first;
+            return data;
         }
 
 
         public long getSnapshotSize() {
-            return triple.second;
+            return dataSize;
         }
 
 
-        public Date getSnapshotLastModifiedDate() {
-            return triple.third;
+        public Date getLastModifiedDate() {
+            return lastModified;
         }
 
 
         @Override
         public String toString() {
             return Utils.readableFileSize(getSnapshotSize()) + ", at " +
-                    Constants.formatDate(getSnapshotLastModifiedDate());
+                    Constants.formatDate(getLastModifiedDate());
         }
 
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            Snapshot snapshot = (Snapshot) o;
+            return dataSize == snapshot.dataSize &&
+                    Arrays.equals(data, snapshot.data) &&
+                    lastModified.equals(snapshot.lastModified);
+        }
 
         @Override
         public int hashCode() {
-            return triple.hashCode();
-        }
-
-
-        @Override
-        @SuppressWarnings("EqualsWhichDoesntCheckParameterClass")
-        public boolean equals(Object obj) {
-            return triple.equals(obj);
+            int result = Arrays.hashCode(data);
+            result = 31 * result + (int) (dataSize ^ (dataSize >>> 32));
+            result = 31 * result + lastModified.hashCode();
+            return result;
         }
     }
 
@@ -308,8 +308,12 @@ public final class PbxFile extends PbxEntry implements Serializable {
                 while (size() > backupPolicy.maxBackupSize) {
                     removeLast();
                 }
-                super.push(newSnapshot);
+                forcePush(newSnapshot);
             }
+        }
+
+        public void forcePush(Snapshot newSnapshot) {
+            super.push(newSnapshot);
         }
     }
 }

@@ -1,20 +1,32 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.utils;
 
-import edduarte.protbox.core.Constants;
 import org.apache.commons.lang3.SystemUtils;
 
 import java.awt.*;
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
+import java.security.SecureRandom;
 import java.text.DecimalFormat;
-import java.util.Random;
 import java.util.Scanner;
-import java.util.UUID;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public final class Utils {
@@ -22,7 +34,8 @@ public final class Utils {
     private static final String WINDOWS_KEY = "SerialNumber";
     private static final String UNIX_KEY = "Serial Number:";
     private static final String SERIAL_ERROR_MESSAGE = "Could not obtain the current machine's serial number.";
-    private static final Random random = new Random();
+    private static final SecureRandom random = new SecureRandom();
+    private static final char[] hexArray = "0123456789abcdef".toCharArray();
     private static String sn = null;
     private static MessageDigest md;
 
@@ -126,39 +139,24 @@ public final class Utils {
         }
     }
 
-
     /**
-     * Generates a SHA1 digest from the provided String.
+     * Generates and returns a 128-bit random hash in hexadecimal format.
      */
-    public static String generateSHA1DigestFromString(String password) {
-        try {
-            if (md == null) {
-                md = MessageDigest.getInstance("SHA1");
-            }
-            return new String(md.digest(password.getBytes()));
-
-        } catch (GeneralSecurityException ex) {
-            // Should never happen since SHA1 is a valid algorithm.
-        }
-        return password;
-    }
-
-
-    public static String generateUniqueId() {
-        String newID = "dir" + UUID.randomUUID().toString().replaceAll("-", "").substring(0, 10);
-        if (new File(Constants.INSTALL_DIR, newID).exists())
-            return generateUniqueId();
-        else
-            return newID;
-    }
-
-
-    public static int generateRandom128bitsNumber() {
-        byte[] bytes = new byte[16];
+    public static String generateRandomHash() {
+        byte[] bytes = new byte[8];
         random.nextBytes(bytes);
-        return ByteBuffer.wrap(bytes).getInt();
+        return bytesToHex(bytes);
     }
 
+    private static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
 
     /**
      * The color data the calendar stores is an int. We want it in hex so that
@@ -184,7 +182,6 @@ public final class Utils {
         }
     }
 
-
     public static String capitalizeWord(String str) {
         int strLen;
         if (str == null || (strLen = str.length()) == 0) {
@@ -195,7 +192,6 @@ public final class Utils {
                 .append(str.substring(1))
                 .toString();
     }
-
 
     /**
      * Centers the specified component based on the user main screen dimensions and resolution.
@@ -233,7 +229,6 @@ public final class Utils {
         }
         return d;
     }
-
 
     public static String readableFileSize(long size) {
         if (size <= 0) {

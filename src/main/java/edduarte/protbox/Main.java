@@ -1,19 +1,34 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox;
 
 import com.google.common.collect.Lists;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.core.Constants;
+import edduarte.protbox.core.SavedRegistry;
 import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.exception.ProtException;
+import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.ui.TrayApplet;
 import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.ui.windows.InsertPasswordWindow;
 import edduarte.protbox.ui.windows.NewRegistryWindow;
 import edduarte.protbox.ui.windows.ProviderListWindow;
 import edduarte.protbox.ui.windows.eIDTokenLoadingWindow;
-import edduarte.protbox.utils.tuples.Pair;
-import edduarte.protbox.utils.tuples.Single;
 import ij.io.DirectoryChooser;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.AndFileFilter;
@@ -38,10 +53,11 @@ import java.security.ProviderException;
 import java.security.Security;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public class Main {
@@ -90,7 +106,7 @@ public class Main {
             new ServerSocket(1882);
         } catch (IOException ex) {
             JOptionPane.showMessageDialog(null, "Another instance of Protbox is already running.\n" +
-                            "Please close the other instance or contact your administrator.",
+                            "Please close the other instance first.",
                     "Protbox already running", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
@@ -137,7 +153,7 @@ public class Main {
                         ex.printStackTrace();
 
                         String s = "The following error occurred:\n"
-                                + ex.getCause().getMessage()+"\n\nIn addition, make sure you have "
+                                + ex.getCause().getMessage() + "\n\nIn addition, make sure you have "
                                 + "an available smart card reader connected before opening the application.";
                         JTextArea textArea = new JTextArea(s);
                         textArea.setColumns(60);
@@ -185,12 +201,12 @@ public class Main {
                 certificateData = returnedCertificateData;
 
                 // gets a password to use on the saved registry files (for loading and saving)
-                final Single<Consumer<SecretKey>> consumerHolder = Single.of(null);
-                consumerHolder.value = password -> {
+                final AtomicReference<Consumer<SecretKey>> consumerHolder = new AtomicReference<>(null);
+                consumerHolder.set(password -> {
                     registriesPasswordKey = password;
                     try {
                         // if there are serialized files, load them if they can be decoded by this user's private key
-                        final List<Pair<File, byte[]>> serializedDirectoryFiles = new ArrayList<>();
+                        final List<SavedRegistry> serializedDirectories = new ArrayList<>();
                         if (Constants.verbose) {
                             logger.info("Reading serialized registry files...");
                         }
@@ -203,8 +219,8 @@ public class Main {
                                     try {
                                         Cipher cipher = Cipher.getInstance("AES");
                                         cipher.init(Cipher.DECRYPT_MODE, registriesPasswordKey);
-                                        byte[] realData = cipher.doFinal(data);
-                                        serializedDirectoryFiles.add(Pair.of(f, realData));
+                                        byte[] registryDecryptedData = cipher.doFinal(data);
+                                        serializedDirectories.add(new SavedRegistry(f, registryDecryptedData));
                                     } catch (GeneralSecurityException ex) {
                                         if (Constants.verbose) {
                                             logger.info("Inserted Password does not correspond to " + f.getName());
@@ -215,14 +231,14 @@ public class Main {
                         }
 
                         // if there were no serialized directories, show NewDirectory window to configure the first folder
-                        if (serializedDirectoryFiles.isEmpty() || registryFileList == null) {
+                        if (serializedDirectories.isEmpty() || registryFileList == null) {
                             if (Constants.verbose) {
                                 logger.info("No registry files were found: running app as first time!");
                             }
                             NewRegistryWindow.start(true);
 
                         } else { // there were serialized directories
-                            loadRegistry(serializedDirectoryFiles);
+                            loadRegistry(serializedDirectories);
                             trayApplet.repaint();
                             showTrayApplet();
                         }
@@ -231,16 +247,16 @@ public class Main {
                             IOException |
                             GeneralSecurityException |
                             ReflectiveOperationException |
-                            ProtException ex) {
+                            ProtboxException ex) {
 
                         JOptionPane.showMessageDialog(
                                 null, "The inserted password was invalid! Please try another one!",
                                 "Invalid password!",
                                 JOptionPane.ERROR_MESSAGE);
-                        insertPassword(consumerHolder.value);
+                        insertPassword(consumerHolder.get());
                     }
-                };
-                insertPassword(consumerHolder.value);
+                });
+                insertPassword(consumerHolder.get());
             });
         });
     }
@@ -258,19 +274,19 @@ public class Main {
     }
 
 
-    private static void loadRegistry(final List<Pair<File, byte[]>> dataList) throws
-    IOException,
+    private static void loadRegistry(final List<SavedRegistry> dataList) throws
+            IOException,
             ReflectiveOperationException,
             GeneralSecurityException,
-            ProtException {
+            ProtboxException {
 
-        for (Pair<File, byte[]> pair : dataList) {
-            File serialized = pair.first;
+        for (SavedRegistry pair : dataList) {
+            File serializedFile = pair.serializedFile;
             if (Constants.verbose) {
-                logger.info("Reading {}...", serialized);
+                logger.info("Reading {}...", serializedFile.getName());
             }
 
-            try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(pair.pollSecond()))) {
+            try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(pair.registryDecryptedData))) {
 
                 PReg reg = (PReg) stream.readObject();
                 if (reg.getUser().equals(user)) {
@@ -287,10 +303,10 @@ public class Main {
                                 "Shared Folder was deleted!",
                                 JOptionPane.ERROR_MESSAGE);
                         reg.stop();
-                        Constants.delete(serialized);
+                        Constants.delete(serializedFile);
 
                     } else if (!reg.getPair().getProtFolderFile().exists()) {
-                        changeProtPath(reg, serialized);
+                        changeProtPath(reg, serializedFile);
 
                     } else {
                         // start the registry
@@ -306,7 +322,7 @@ public class Main {
         }
 
         if (trayApplet.getPairPanels().length == 0) {
-            // there are no instances left!
+            // there are no instances left
             hideTrayApplet();
         }
     }
@@ -358,7 +374,7 @@ public class Main {
     }
 
 
-    private static void changeProtPath(PReg reg, File serializedDirectory) throws ProtException {
+    private static void changeProtPath(PReg reg, File serializedDirectory) throws ProtboxException {
 
         if (JOptionPane.showConfirmDialog(
                 null, "The prot folder from one of your registries\n" +

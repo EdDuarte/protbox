@@ -1,19 +1,31 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.Main;
-import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.FolderValidation;
-import edduarte.protbox.core.PbxPair;
-import edduarte.protbox.core.PbxUser;
+import edduarte.protbox.core.*;
+import edduarte.protbox.core.keyexchange.Request;
 import edduarte.protbox.core.registry.PReg;
-import edduarte.protbox.core.watcher.RequestFilesWatcher;
-import edduarte.protbox.exception.ProtException;
+import edduarte.protbox.core.watcher.ResponseWatcher;
+import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.ui.panels.PairPanel;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.tuples.Pair;
-import edduarte.protbox.utils.tuples.Triple;
+import edduarte.protbox.utils.listeners.OnMouseClick;
 import ij.io.DirectoryChooser;
 import org.jdesktop.swingx.JXLabel;
 import org.jdesktop.swingx.prompt.PromptSupport;
@@ -35,16 +47,19 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
-import java.security.PrivateKey;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public class NewRegistryWindow extends JFrame {
@@ -67,12 +82,12 @@ public class NewRegistryWindow extends JFrame {
         this.setIconImage(Constants.getAsset("box.png"));
         this.firstTime = firstTime;
         if (firstTime) {
-            SPACING = 120;
+            SPACING = 100;
         }
 
         setContentPane(new PathConfigurationCard());
 
-        setSize(700, SPACING + 290);
+        setSize(700, SPACING + 310);
         setUndecorated(true);
         setResizable(false);
         getRootPane().setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100)));
@@ -123,7 +138,7 @@ public class NewRegistryWindow extends JFrame {
 
         } else if (resultCode == FolderValidation.RESULT_CODE_EXISTING_REGISTRY) {
             dispose();
-            sendingAction(sharedPath);
+            requestKey(sharedPath);
         }
         revalidate();
         repaint();
@@ -139,8 +154,9 @@ public class NewRegistryWindow extends JFrame {
             // registry is completely new -> generate the single symmetric key to be used from now on by all users
             KeyGenerator pairKeyGen = KeyGenerator.getInstance(encryptionAlgorithm);
             pairKeyGen.init(256);
-            KeyGenerator integrityKeyGen = KeyGenerator.getInstance("HmacSHA512");
-            addInstance(pairKeyGen.generateKey(), integrityKeyGen.generateKey(), algorithm, true);
+            SecretKey pairKey = pairKeyGen.generateKey();
+//            SecretKey integrityKey = new SecretKeySpec(pairKey.getEncoded(), "HmacSHA512");
+            addInstance(pairKey/*, integrityKey*/, algorithm, true);
 
         } catch (GeneralSecurityException ex) {
             logger.info(ex.getMessage(), ex);
@@ -148,19 +164,81 @@ public class NewRegistryWindow extends JFrame {
         }
     }
 
-    private void sendingAction(final Path sharedFolderPath) {
+    private void requestKey(final Path sharedFolderPath) {
 
-        File askFile = new File(sharedFolderPath.toFile(), Constants.SPECIAL_FILE_ASK_PREFIX + Utils.generateRandom128bitsNumber());
-        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(askFile))) {
+        String requestHash = Utils.generateRandomHash();
+        String requestFileName = Constants.SPECIAL_FILE_FIRST_CHAR + requestHash;
+
+        File requestFile = new File(sharedFolderPath.toFile(), requestFileName);
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(requestFile))) {
 
             PbxUser thisUser = Main.getUser();
             byte[] encodedPublicKey = Main.getCertificateData().getEncodedPublicKey();
             byte[] signatureBytes = Main.getCertificateData().getSignatureBytes();
 
-            // SAVE THE SIGNED PUBLIC KEY, THE SIGNATURE AND THE USER DATA IN THE "»ASK" FILE
-            out.writeObject(Triple.of(thisUser, encodedPublicKey, signatureBytes));
+            // saves the signed public key, the signature and the user data in the request file
+            out.writeObject(new Request(thisUser, encodedPublicKey, signatureBytes));
             out.flush();
-            waitForResponse(sharedFolderPath, askFile, Main.getCertificateData().getExchangePrivateKey());
+
+
+            final Timer timer = new Timer();
+            final WaitingForResponseWindow waitingWindow = WaitingForResponseWindow.getInstance();
+
+            AtomicReference<ResponseWatcher> watcherRef = new AtomicReference<>();
+            ResponseWatcher w = new ResponseWatcher(sharedFolderPath, requestHash, response -> {
+                try {
+                    CertificateData certificateData = Main.getCertificateData();
+
+                    // decrypts key using the previously generated private key
+                    Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+
+                    c.init(Cipher.DECRYPT_MODE, certificateData.getExchangePrivateKey());
+                    byte[] decryptedPairKey = c.doFinal(response.encryptedPairKey);
+
+//                    c.init(Cipher.DECRYPT_MODE, certificateData.getExchangePrivateKey());
+//                    byte[] decryptedIntegrityKey = c.doFinal(response.encryptedIntegrityKey);
+
+                    SecretKey pairKey = new SecretKeySpec(decryptedPairKey, "AES");
+//                    SecretKey integrityKey = new SecretKeySpec(decryptedIntegrityKey, "HmacSHA512");
+
+                    addInstance(pairKey,/* integrityKey,*/ response.directoryAlgorithm, false);
+
+                    waitingWindow.dispose();
+                    ResponseWatcher watcher = watcherRef.get();
+                    if (watcher != null) {
+                        watcher.interrupt();
+                        watcherRef.set(null);
+                    }
+                    timer.cancel();
+                    timer.purge();
+
+                } catch (GeneralSecurityException ex) {
+                    logger.info("The response file from the replier is unreadable! Ignoring file.", ex);
+                }
+            });
+            watcherRef.set(w);
+            w.start();
+
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    waitingWindow.dispose();
+                    ResponseWatcher watcher = watcherRef.get();
+                    if (watcher != null) {
+                        watcher.interrupt();
+                        watcherRef.set(null);
+                    }
+                    JOptionPane.showMessageDialog(
+                            NewRegistryWindow.this, "Your request timed-out! Check if your certificate and\n" +
+                                    "exchange keys are valid and try again.\n",
+                            "Access Denied!",
+                            JOptionPane.ERROR_MESSAGE);
+                    go0();
+                    previousCard = null;
+                    setVisible(true);
+                    toFront();
+                }
+            }, 2 * 1000 * 60);
 
         } catch (Exception ex) {
             logger.error(ex.toString());
@@ -169,110 +247,10 @@ public class NewRegistryWindow extends JFrame {
         }
     }
 
-    private void waitForResponse(final Path dropPath, final File askFile, final PrivateKey privateKey) {
-
-        SwingUtilities.invokeLater(() -> {
-            final WaitingForResponseWindow waitingWindow = WaitingForResponseWindow.getInstance();
-            try {
-                final Timer timer = new Timer();
-                final Thread thread = new Thread(new RequestFilesWatcher(dropPath, detectedFile -> {
-                    if (detectedFile.getName().contains(Constants.SPECIAL_FILE_INVALID_PREFIX) &&
-                            detectedFile.getName().substring(8).equalsIgnoreCase(Main.getUser().getId())) {
-                        waitingWindow.dispose();
-                        timer.cancel();
-                        timer.purge();
-                        Constants.delete(askFile);
-                        JOptionPane.showMessageDialog(
-                                NewRegistryWindow.this, "Your user data and authentication certificates were refused \n" +
-                                        "by the user you asked permission to!\n\n",
-                                "Access Denied!",
-                                JOptionPane.ERROR_MESSAGE);
-                        go0();
-                        previousCard = null;
-                        setVisible(true);
-                        toFront();
-                        Constants.delete(detectedFile);
-
-                    } else if (detectedFile.getName().contains(Constants.SPECIAL_FILE_KEY_PREFIX) &&
-                            detectedFile.getName().substring(4).equalsIgnoreCase(Main.getUser().getId())) {
-                        if (Constants.verbose) {
-                            logger.info("Detected file with shared folder secret key.");
-                        }
-                        waitingWindow.dispose();
-                        timer.cancel();
-                        timer.purge();
-                        Constants.delete(askFile);
-
-                        // LOAD RECEIVED FILE WITH ALGORITHM AND ENCRYPTED KEY
-                        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(detectedFile))) {
-                            Pair<String, byte[]> keyFile = (Pair<String, byte[]>) in.readObject();
-                            in.close();
-                            Constants.delete(detectedFile);
-
-                            // DECRYPT KEY USING THE PREVIOUSLY GENERATED PRIVATE KEY
-                            String directoryAlgorithm = keyFile.pollFirst();
-
-                            Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-                            c.init(Cipher.DECRYPT_MODE, privateKey);
-                            byte[] decryptedKey = c.doFinal(keyFile.pollSecond());
-                            SecretKey secretKey = new SecretKeySpec(
-                                    decryptedKey,
-                                    0,
-                                    decryptedKey.length,
-                                    directoryAlgorithm);
-
-                            SecretKey integrityKey = KeyGenerator.getInstance("HmacSHA512").generateKey();
-
-                            addInstance(secretKey, integrityKey, directoryAlgorithm, false);
-
-                        } catch (GeneralSecurityException | IOException | ReflectiveOperationException ex) {
-                            waitingWindow.dispose();
-                            timer.cancel();
-                            timer.purge();
-                            Constants.delete(askFile);
-                            JOptionPane.showMessageDialog(
-                                    NewRegistryWindow.this, "The received file from the authenticator is unreadable!\n" +
-                                            "Either the received key file was corrupt or you could not decrypt it.\n\n",
-                                    "Access Denied!",
-                                    JOptionPane.ERROR_MESSAGE);
-                            go0();
-                            previousCard = null;
-                            setVisible(true);
-                            toFront();
-                            Constants.delete(detectedFile);
-                        }
-                    }
-                }));
-                thread.start();
-
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        thread.interrupt();
-                        waitingWindow.dispose();
-                        Constants.delete(askFile);
-                        JOptionPane.showMessageDialog(
-                                NewRegistryWindow.this, "The user you asked permission to took too long to respond.\n" +
-                                        "Please try again later.\n\n",
-                                "Access Denied!",
-                                JOptionPane.ERROR_MESSAGE);
-                        go0();
-                        previousCard = null;
-                        setVisible(true);
-                        toFront();
-                    }
-                }, 2 * 1000 * 60);
-
-            } catch (IOException ex) {
-                logger.info(ex.getMessage(), ex);
-            }
-        });
-    }
-
-    private void addInstance(SecretKey encryptionKey, SecretKey integrityKey, String algorithm, boolean isANewDirectory) {
+    private void addInstance(SecretKey encryptionKey/*, SecretKey integrityKey*/, String algorithm, boolean isANewDirectory) {
         try {
             PbxPair pair =
-                    new PbxPair(path1.getText(), path2.getText(), algorithm, encryptionKey, integrityKey);
+                    new PbxPair(path1.getText(), path2.getText(), algorithm, encryptionKey/*, integrityKey*/);
 
             PReg registry = new PReg(Main.getUser(), pair, isANewDirectory);
             registry.initialize();
@@ -286,7 +264,7 @@ public class NewRegistryWindow extends JFrame {
                 Main.showTrayApplet();
             }
 
-        } catch (ProtException | IOException | GeneralSecurityException | AWTException ex) {
+        } catch (ProtboxException | IOException | GeneralSecurityException | AWTException ex) {
             logger.info(ex.getMessage(), ex);
             JOptionPane.showMessageDialog(this, ex.toString());
         }
@@ -310,7 +288,6 @@ public class NewRegistryWindow extends JFrame {
             super.dispose();
         }
     }
-
 
     /**
      * The card that is used to set the shared folder's and the prot folder's paths.
@@ -341,31 +318,28 @@ public class NewRegistryWindow extends JFrame {
             if (firstTime) {
                 JXLabel firstTimeInfo = new JXLabel("Welcome to Protbox!\n\n" +
                         "You will need to configure at least one pair of folders in order to use this application!\nPlease set the shared folder to be " +
-                        "encrypted (like a Dropbox folder you are sharing with another user) and the prot " +
+                        "encrypted (like a cloud folder you are sharing with another user) and the prot " +
                         "folder, where every file from the shared folder above will be decoded and available " +
                         "for normal usage.");
                 firstTimeInfo.setLineWrap(true);
                 firstTimeInfo.setFont(Constants.FONT.deriveFont(13f));
-                firstTimeInfo.setBounds(20, 150, 680, SPACING);
+                firstTimeInfo.setBounds(20, 160, 680, 90);
                 add(firstTimeInfo);
-            } else {
-                JXLabel info = new JXLabel("Monitor another pair for Protbox protection...");
-                info.setLineWrap(true);
-                info.setFont(Constants.FONT.deriveFont(13f));
-                info.setBounds(20, 150, 680, 20);
-                add(info);
             }
 
 
             JLabel label1 = new JLabel("Shared folder: ");
             label1.setFont(Constants.FONT);
-            label1.setBounds(20, SPACING + 140, 100, 30);
+            label1.setBounds(20, SPACING + 170, 100, 30);
             path1 = new JTextField();
             PromptSupport.setPrompt("<none selected>", path1);
             path1.setMargin(new Insets(0, 10, 0, 10));
             path1.setFont(Constants.FONT);
-            path1.setBorder(new CompoundBorder(new LineBorder(new Color(210, 210, 210), 1, false), new EmptyBorder(0, 3, 0, 0)));
-            path1.setBounds(130, SPACING + 140, 470, 30);
+            path1.setBorder(new CompoundBorder(
+                    new LineBorder(new Color(210, 210, 210), 1, false),
+                    new EmptyBorder(0, 3, 0, 0)
+            ));
+            path1.setBounds(130, SPACING + 170, 470, 30);
             path1.addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyReleased(KeyEvent e) {
@@ -383,16 +357,16 @@ public class NewRegistryWindow extends JFrame {
 
                 @Override
                 public void ancestorMoved(AncestorEvent e) {
-                    // Nothing here, not needed
+                    // nothing here, not needed
                 }
 
                 @Override
                 public void ancestorRemoved(AncestorEvent e) {
-                    // Nothing here, not needed
+                    // nothing here, not needed
                 }
-            }); // makes this component the focused object by default
+            });
             b1.setBorder(new LineBorder(Color.lightGray));
-            b1.setBounds(610, SPACING + 140, 70, 30);
+            b1.setBounds(610, SPACING + 170, 70, 30);
             add(label1);
             add(path1);
             add(b1);
@@ -401,13 +375,13 @@ public class NewRegistryWindow extends JFrame {
 
             JLabel label2 = new JLabel("Prot folder: ");
             label2.setFont(Constants.FONT);
-            label2.setBounds(20, SPACING + 180, 100, 30);
+            label2.setBounds(20, SPACING + 210, 100, 30);
             path2 = new JTextField();
             PromptSupport.setPrompt("<none selected>", path2);
             path2.setMargin(new Insets(0, 10, 0, 10));
             path2.setFont(Constants.FONT);
             path2.setBorder(new CompoundBorder(new LineBorder(new Color(210, 210, 210), 1, false), new EmptyBorder(0, 3, 0, 0)));
-            path2.setBounds(130, SPACING + 180, 470, 30);
+            path2.setBounds(130, SPACING + 210, 470, 30);
             path2.addKeyListener(new KeyAdapter() {
                 @Override
                 public void keyReleased(KeyEvent e) {
@@ -416,7 +390,7 @@ public class NewRegistryWindow extends JFrame {
             });
             JButton b2 = new JButton("Choose ...");
             b2.setBorder(new LineBorder(Color.lightGray));
-            b2.setBounds(610, SPACING + 180, 70, 30);
+            b2.setBounds(610, SPACING + 210, 70, 30);
             add(label2);
             add(path2);
             add(b2);
@@ -425,7 +399,7 @@ public class NewRegistryWindow extends JFrame {
 
             go = new JButton("Next >");
             go.setBorder(new LineBorder(Color.lightGray));
-            go.setBounds(590, SPACING + 230, 90, 30);
+            go.setBounds(590, SPACING + 260, 90, 30);
             go.setEnabled(false);
             add(go);
             go.addActionListener(e -> go1());
@@ -460,10 +434,10 @@ public class NewRegistryWindow extends JFrame {
             this.add(close);
 
 
-            JXLabel info = new JXLabel("Monitor another shared folder for Protbox protection...");
+            JXLabel info = new JXLabel("Set the encryption algorithm and mode that will be used to protect your files:");
             info.setLineWrap(true);
             info.setFont(Constants.FONT.deriveFont(13f));
-            info.setBounds(20, 150, 680, SPACING);
+            info.setBounds(20, 160, 680, 30);
             add(info);
 
             int newSpace = SPACING;
@@ -473,18 +447,18 @@ public class NewRegistryWindow extends JFrame {
 
             JLabel label3 = new JLabel("Algorithm: ");
             label3.setFont(Constants.FONT);
-            label3.setBounds(20, newSpace + 93, 80, 30);
+            label3.setBounds(20, newSpace + 113, 80, 30);
             combo1 = new JComboBox<>();
-            combo1.setBounds(90, newSpace + 100, 120, 20);
+            combo1.setBounds(90, newSpace + 120, 120, 20);
             combo1.addItem("AES");
             add(label3);
             add(combo1);
 
             JLabel label4 = new JLabel("Cipher Mode: ");
             label4.setFont(Constants.FONT);
-            label4.setBounds(250, SPACING + 93, 80, 30);
+            label4.setBounds(250, newSpace + 113, 80, 30);
             combo2 = new JComboBox<>();
-            combo2.setBounds(340, SPACING + 100, 120, 20);
+            combo2.setBounds(340, newSpace + 120, 120, 20);
             combo2.addItem("ECB");
             combo2.addItem("CBC");
             add(label4);
@@ -493,7 +467,7 @@ public class NewRegistryWindow extends JFrame {
 
             JButton previous = new JButton("< Previous");
             previous.setBorder(new LineBorder(Color.lightGray));
-            previous.setBounds(20, SPACING + 230, 90, 30);
+            previous.setBounds(20, SPACING + 260, 90, 30);
             previous.setEnabled(true);
             add(previous);
             previous.addActionListener(e -> go0());
@@ -501,7 +475,7 @@ public class NewRegistryWindow extends JFrame {
 
             go = new JButton("Finish");
             go.setBorder(new LineBorder(Color.lightGray));
-            go.setBounds(590, SPACING + 230, 90, 30);
+            go.setBounds(590, SPACING + 260, 90, 30);
             go.setEnabled(true);
             add(go);
             go.addActionListener(e -> {

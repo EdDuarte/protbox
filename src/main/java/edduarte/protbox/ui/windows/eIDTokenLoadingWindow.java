@@ -1,13 +1,28 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.Main;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.PbxUser;
-import edduarte.protbox.ui.listeners.OnMouseClick;
 import edduarte.protbox.utils.TokenParser;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.tuples.Pair;
+import edduarte.protbox.utils.listeners.OnMouseClick;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sun.security.x509.X509CertImpl;
@@ -26,7 +41,7 @@ import java.util.TimerTask;
 import java.util.function.BiConsumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public class eIDTokenLoadingWindow extends JFrame {
@@ -87,18 +102,74 @@ public class eIDTokenLoadingWindow extends JFrame {
                     Provider p = Security.getProvider(providerName);
                     KeyStore ks = KeyStore.getInstance("PKCS11", p);
                     String alias = Main.pkcs11Providers.get(providerName);
-                    logger.info("Card was found!!!");
+                    if (Constants.verbose) {
+                        logger.info("eID Token was found!");
+                    }
                     t.cancel();
 
                     setInfoWithLoading();
-                    Pair<PbxUser, CertificateData> entry = getCertificateData(alias, ks);
 
-                    setInfoWithUser(entry.first);
-                    Thread.sleep(2000);
+                    try {
+                        ks.load(null, null);
 
-                    consumer.accept(entry.first, entry.second);
-                    t.cancel();
-                    dispose();
+                        Certificate cert =ks.getCertificate(alias);
+//                        ((X509Certificate) cert).checkValidity(Constants.getToday());
+                        Certificate[] chain = ks.getCertificateChain(alias);
+//                        for (Certificate c : chain) {
+//                            ((X509Certificate) c).checkValidity(Constants.getToday());
+//                        }
+
+                        if (ks.isKeyEntry(alias)) {
+                            PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
+                            X509Certificate c = new X509CertImpl(cert.getEncoded());
+
+                            // generates a new key-pair to use in folder sharing requests and responses
+                            KeyPair pair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+                            byte[] encodedPublicKey = pair.getPublic().getEncoded();
+
+
+                            // obtains signature to use in key requests
+                            Signature sig1 = Signature.getInstance(c.getSigAlgName());
+                            sig1.initSign(privateKey);
+                            sig1.update(encodedPublicKey);
+                            byte[] signatureBytes = sig1.sign();
+
+                            // gets user name and cc number
+                            TokenParser parser = TokenParser.parse(c);
+                            if (Constants.verbose) {
+                                logger.info("Token parser results: {} {}", parser.getUserName(), parser.getSerialNumber());
+                            }
+
+                            // returns certificate, generated pair and signature bytes
+                            PbxUser user = new PbxUser(
+                                    chain,                                    // certificate chain
+                                    c,                                        // X509 certificate
+                                    parser.getSerialNumber(),                 // user cc number
+                                    parser.getUserName(),                     // user name
+                                    InetAddress.getLocalHost().getHostName(), // machine name
+                                    Utils.getSerialNumber());                 // machine serial number
+
+                            CertificateData data = new CertificateData(encodedPublicKey, signatureBytes, pair.getPrivate());
+
+                            setInfoWithUser(user);
+                            Thread.sleep(2000);
+
+                            consumer.accept(user, data);
+                            t.cancel();
+                            dispose();
+                        }
+                    } catch (CertificateException | KeyStoreException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "You must insert you digital authentication certificate code in order to use this application!\n" +
+                                        "Please run the application again and insert you digital authentication certificate code!",
+                                "Invalid Digital Signature Code!", JOptionPane.ERROR_MESSAGE);
+                        System.exit(2);
+                    } catch (GeneralSecurityException | IOException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                        System.exit(2);
+                    }
 
                 } catch (Exception ex) {
                     if (Constants.verbose) {
@@ -114,70 +185,10 @@ public class eIDTokenLoadingWindow extends JFrame {
         if (instance == null) {
             instance = new eIDTokenLoadingWindow(providerName, consumer);
         } else {
-            instance.show();
+            instance.setVisible(true);
             instance.toFront();
         }
         return instance;
-    }
-
-    private static Pair<PbxUser, CertificateData> getCertificateData(String alias, KeyStore ks) {
-        Certificate cert = null;
-        try {
-            ks.load(null, null);
-
-            cert = ks.getCertificate(alias);
-//            cert.verify(cert.getPublicKey());
-            Certificate[] chain = ks.getCertificateChain(alias);
-//            for (Certificate c : chain) {
-//                c.verify(cert.getPublicKey());
-//            }
-
-            if (ks.isKeyEntry(alias)) {
-                PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
-                X509Certificate c = new X509CertImpl(cert.getEncoded());
-
-                // GENERATE A NEW KEYPAIR TO USE IN FOLDER SHARING REQUESTS AND RESPONSES
-                KeyPair pair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-                byte[] encodedPublicKey = pair.getPublic().getEncoded();
-
-
-                //SIGNING
-//                Signature sig1 = Signature.getInstance("SHA1withRSA");
-                Signature sig1 = Signature.getInstance(c.getSigAlgName());
-                sig1.initSign(privateKey);
-                sig1.update(encodedPublicKey);
-                byte[] signatureBytes = sig1.sign();
-
-                // Gets user first and last name and cc number
-                TokenParser parser = TokenParser.parse(c);
-                logger.info(parser.getUserName() + " " + parser.getSerialNumber());
-
-                // RETURN CERTIFICATE, GENERATED PAIR AND SIGNATURE BYTES
-                PbxUser user = new PbxUser(
-                        chain, // Certificate chain
-                        c, // X509 certificate
-                        parser.getSerialNumber(), // user cc number
-                        parser.getUserName(), // user name
-                        InetAddress.getLocalHost().getHostName(), // machine name
-                        Utils.getSerialNumber()); // machine serial number
-
-                CertificateData data = new CertificateData(encodedPublicKey, signatureBytes, pair.getPrivate());
-
-                return Pair.of(user, data);
-            }
-        } catch (CertificateException | KeyStoreException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(null, "You must insert you digital authentication certificate code in order to use this application!\n" +
-                            "Please run the application again and insert you digital authentication certificate code!",
-                    "Invalid Digital Signature Code!", JOptionPane.ERROR_MESSAGE);
-            System.exit(2);
-        } catch (GeneralSecurityException | IOException ex) {
-            ex.printStackTrace();
-            JOptionPane.showMessageDialog(null, "Error: " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(2);
-        }
-        return null;
     }
 
     private void setInfoWithLooking() {

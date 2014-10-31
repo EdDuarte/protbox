@@ -1,3 +1,19 @@
+/*
+ * Copyright 2014 University of Aveiro
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package edduarte.protbox.core.registry;
 
 import edduarte.protbox.core.Constants;
@@ -5,32 +21,34 @@ import edduarte.protbox.core.FolderOption;
 import edduarte.protbox.core.PbxPair;
 import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.core.synchronization.SyncModule;
-import edduarte.protbox.core.watcher.RegistryWatcher;
-import edduarte.protbox.core.watcher.RequestFilesWatcher;
-import edduarte.protbox.exception.ProtException;
+import edduarte.protbox.core.watcher.DefaultWatcher;
+import edduarte.protbox.core.watcher.RequestWatcher;
+import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.ui.windows.UserValidationWindow;
+import edduarte.protbox.ui.windows.RequestValidationWindow;
+import edduarte.protbox.utils.Pair;
 import edduarte.protbox.utils.Utils;
-import edduarte.protbox.utils.tuples.Duo;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.IvParameterSpec;
 import javax.swing.tree.DefaultMutableTreeNode;
 import java.awt.*;
-import java.io.*;
-import java.nio.ByteBuffer;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.util.*;
 import java.util.List;
-import java.util.function.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 /**
@@ -47,7 +65,7 @@ import java.util.stream.Collectors;
  * take the appropriate, local decisions regarding file synchronizations, encryption/decryption
  * and recovery actions. In particular, a PReg is never synchronized with another one.
  *
- * @author Eduardo Duarte (<a href="mailto:emod@ua.pt">emod@ua.pt</a>)
+ * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
 public final class PReg implements Serializable {
@@ -105,20 +123,20 @@ public final class PReg implements Serializable {
     private transient Timer timerIndex;
 
 
-    private transient Thread sharedFolderWatcher;
+    private transient DefaultWatcher sharedFolderWatcher;
 
 
-    private transient Thread protFolderWatcher;
+    private transient DefaultWatcher protFolderWatcher;
 
 
-    private transient Thread requestFileWatcher;
+    private transient RequestWatcher requestFileWatcher;
 
 
     /**
      * Constructs a new registry structure that links the Shared and the Prot folders using entries.
      */
-    public PReg(PbxUser user, PbxPair pair, boolean isANewPReg) throws ProtException {
-        this.id = Utils.generateUniqueId();
+    public PReg(PbxUser user, PbxPair pair, boolean isANewPReg) throws ProtboxException {
+        this.id = "dir" + Utils.generateRandomHash();
         this.user = user;
         this.pair = pair;
         this.SKIP_WATCHER_ENTRIES = new ArrayList<>();
@@ -128,7 +146,7 @@ public final class PReg implements Serializable {
             try {
                 Constants.moveContentsFromDirToDir(pair.getSharedFolderFile(), pair.getProtFolderFile());
             } catch (IOException ex) {
-                throw new ProtException(ex);
+                throw new ProtboxException(ex);
             }
         }
     }
@@ -141,6 +159,9 @@ public final class PReg implements Serializable {
         // starts the cipher according to the chosen algorithm
         CIPHER = Cipher.getInstance(pair.getPairAlgorithm());
 
+        // starts the synchronization threads, who are responsible of syncing elements between the folders
+        SyncModule.start();
+
         // checks the registry periodically (every 2 seconds) and detects any changes made
         timerIndex = new Timer();
         timerIndex.scheduleAtFixedRate(new TimerTask() {
@@ -148,7 +169,7 @@ public final class PReg implements Serializable {
             public void run() {
                 try {
                     executeIntegrityCheck();
-                } catch (ProtException ex) {
+                } catch (ProtboxException ex) {
                     run();
                 }
             }
@@ -157,29 +178,16 @@ public final class PReg implements Serializable {
         // starts the registry watchers for both prot and shared folders
         final Path sharedPath = Paths.get(pair.getSharedFolderPath());
         final Path protPath = Paths.get(pair.getProtFolderPath());
-        sharedFolderWatcher = new Thread(new RegistryWatcher(this, FolderOption.SHARED, sharedPath));
-        protFolderWatcher = new Thread(new RegistryWatcher(this, FolderOption.PROT, protPath));
+        sharedFolderWatcher = new DefaultWatcher(this, FolderOption.SHARED, sharedPath);
+        protFolderWatcher = new DefaultWatcher(this, FolderOption.PROT, protPath);
         sharedFolderWatcher.start();
         protFolderWatcher.start();
 
         // starts a file watcher for creation of access request files
-        requestFileWatcher = new Thread(new RequestFilesWatcher(sharedPath, result -> {
-            if (result.getName().contains(Constants.SPECIAL_FILE_ASK_PREFIX) &&
-                    result.getName().substring(4).equalsIgnoreCase(user.getId())) {
-
-                // wait 1 second to avoid incomplete readings or file locks
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                }
-                UserValidationWindow.getInstance(this, result);
-            }
-        }));
+        requestFileWatcher = new RequestWatcher(sharedPath, detectedRequest -> {
+            RequestValidationWindow.getInstance(this, detectedRequest);
+        });
         requestFileWatcher.start();
-
-
-        // starts the synchronization threads, who are responsible of syncing elements between the folders
-        SyncModule.start();
 
         initialized = true;
     }
@@ -198,7 +206,7 @@ public final class PReg implements Serializable {
             if (requestFileWatcher != null)
                 requestFileWatcher.interrupt();
 
-            SyncModule.removeSyncPairsForReg(this);
+            SyncModule.removeSyncEntriesOfRegistry(this);
 
             initialized = false;
 
@@ -235,7 +243,7 @@ public final class PReg implements Serializable {
 
     // -- INTEGRITY CHECKING METHODS --
 
-    public void executeIntegrityCheck() throws ProtException {
+    public void executeIntegrityCheck() throws ProtboxException {
         if (currentlyIndexing) {
             return;
         }
@@ -244,7 +252,7 @@ public final class PReg implements Serializable {
         currentlyIndexing = false;
     }
 
-    private void integrityCheck(PbxFolder folder, File sharedFolder, File protFolder) throws ProtException {
+    private void integrityCheck(PbxFolder folder, File sharedFolder, File protFolder) throws ProtboxException {
         if (folder == null)
             return;
 
@@ -313,7 +321,7 @@ public final class PReg implements Serializable {
                     integrityCheck((PbxFolder) newEntry, sharedFile, protFile);
                 }
 
-            } catch (ProtException ex) {
+            } catch (ProtboxException ex) {
                 logger.error("Error while checking shared file without pair " + sharedFile.getName(), ex);
             }
         }
@@ -330,31 +338,40 @@ public final class PReg implements Serializable {
                     integrityCheck((PbxFolder) newEntry, sharedFile, protFile);
                 }
 
-            } catch (ProtException ex) {
+            } catch (ProtboxException ex) {
                 logger.error("Error while checking prot file without pair " + protFile.getName(), ex);
             }
         }
     }
 
-    private PbxEntry evaluate(PbxEntry entry, File sharedFile, File protFile) throws ProtException {
+    private PbxEntry evaluate(PbxEntry entry, File sharedFile, File protFile) throws ProtboxException {
         try {
             if (entry == null) {
                 // is a file or folder that is not represented by an entry on this PReg
-                logger.info("is a file or folder that is not represented by an entry on this PReg");
+                if (Constants.verbose) {
+                    logger.info("is a file or folder that is not represented by an entry on this PReg");
+                }
+
 
                 if (sharedFile == null && protFile != null) {
                     // new file at prot folder -> add to registry and sync to shared
-                    logger.info("new file at prot folder -> add to registry and sync to shared");
+                    if (Constants.verbose) {
+                        logger.info("new file at prot folder -> add to registry and sync to shared");
+                    }
                     return add(protFile, FolderOption.PROT);
 
                 } else if (sharedFile != null && protFile == null) {
                     // new file at shared folder -> add to registry and sync to prot
-                    logger.info("new file at shared folder -> add to registry and sync to prot");
+                    if (Constants.verbose) {
+                        logger.info("new file at shared folder -> add to registry and sync to prot");
+                    }
                     return add(sharedFile, FolderOption.SHARED);
 
                 } else if (sharedFile != null && protFile != null) {
                     // new files at both folders -> add to registry as conflicted copy and sync to shared
-                    logger.info("new files at both folders -> add to registry as conflicted copy and sync to shared");
+                    if (Constants.verbose) {
+                        logger.info("new files at both folders -> add to registry as conflicted copy and sync to shared");
+                    }
                     addConflicted(protFile, FolderOption.PROT);
                     return add(sharedFile, FolderOption.SHARED);
                 }
@@ -371,34 +388,42 @@ public final class PReg implements Serializable {
                 } else if ((sharedFile == null || !sharedFile.exists()) && protFile != null) {
                     // file was deleted from shared folder
                     Date protLS = new Date(protFile.lastModified());
-                    Date entryLS = entry1.getLatestSnapshot().getSnapshotLastModifiedDate();
+                    Date entryLS = entry1.getLatestSnapshot().getLastModifiedDate();
 
                     if (protLS.compareTo(entryLS) < 0) {
                         // prot file is more recent than entry -> sync prot file to shared folder
-                        logger.info("prot file is more recent than entry -> sync prot file to shared folder");
+                        if (Constants.verbose) {
+                            logger.info("prot file is more recent than entry -> sync prot file to shared folder");
+                        }
                         SyncModule.toShared(this, entry);
 
                     } else {
                         // prot file is older than entry -> delete it while retaining data
-                        logger.info("prot file is older than entry -> delete it while retaining data");
-                        delete(protFile.toPath(), FolderOption.PROT);
+                        if (Constants.verbose) {
+                            logger.info("prot file is older than entry -> delete it while retaining data");
+                        }
+                        delete(protFile, FolderOption.PROT);
 
                     }
 
                 } else if (sharedFile != null && protFile == null) {
                     // file was deleted from prot folder
                     Date sharedLS = new Date(sharedFile.lastModified());
-                    Date entryLS = entry1.getLatestSnapshot().getSnapshotLastModifiedDate();
+                    Date entryLS = entry1.getLatestSnapshot().getLastModifiedDate();
 
                     if (sharedLS.compareTo(entryLS) < 0) {
                         // shared file is more recent than entry -> sync shared file to prot folder
-                        logger.info("shared file is more recent than entry -> sync shared file to prot folder");
+                        if (Constants.verbose) {
+                            logger.info("shared file is more recent than entry -> sync shared file to prot folder");
+                        }
                         SyncModule.toProt(this, entry);
 
                     } else {
                         // shared file is older than entry -> delete it while retaining data
-                        logger.info("shared file is older than entry -> delete it while retaining data");
-                        delete(sharedFile.toPath(), FolderOption.SHARED);
+                        if (Constants.verbose) {
+                            logger.info("shared file is older than entry -> delete it while retaining data");
+                        }
+                        delete(sharedFile, FolderOption.SHARED);
 
                     }
 
@@ -407,7 +432,7 @@ public final class PReg implements Serializable {
 
                     Date sharedLS = new Date(sharedFile.lastModified());
                     Date protLS = new Date(protFile.lastModified());
-                    Date entryLS = entry1.getLatestSnapshot().getSnapshotLastModifiedDate();
+                    Date entryLS = entry1.getLatestSnapshot().getLastModifiedDate();
                     int compareSharedProt = sharedLS.compareTo(protLS);
                     int compareProtEntry = protLS.compareTo(entryLS);
                     int compareSharedEntry = sharedLS.compareTo(entryLS);
@@ -420,17 +445,23 @@ public final class PReg implements Serializable {
 
                         if (compareProtEntry == 0 && compareSharedEntry != 0) {
                             // shared file was updated -> sync shared to prot
-                            logger.info("shared file was updated -> sync shared to prot");
+                            if (Constants.verbose) {
+                                logger.info("shared file was updated -> sync shared to prot");
+                            }
                             SyncModule.toProt(this, entry);
 
                         } else if (compareProtEntry != 0 && compareSharedEntry == 0) {
                             // prot file was updated -> sync prot to shared
-                            logger.info("prot file was updated -> sync prot to shared");
+                            if (Constants.verbose) {
+                                logger.info("prot file was updated -> sync prot to shared");
+                            }
                             SyncModule.toShared(this, entry);
 
                         } else if (compareProtEntry != 0 && compareSharedEntry != 0) {
                             // both files were updated -> conflict
-                            logger.info("both files were updated -> conflict");
+                            if (Constants.verbose) {
+                                logger.info("both files were updated -> conflict");
+                            }
                             addConflicted(protFile, FolderOption.PROT);
                             SyncModule.toProt(this, entry);
                         }
@@ -440,16 +471,22 @@ public final class PReg implements Serializable {
                 // is a folder that is already represented by an entry on this PReg
                 if ((sharedFile == null || !sharedFile.exists()) && (protFile == null || !protFile.exists())) {
                     // entry was deleted from both folders -> keep entry and do nothing
-                    logger.info("entry was deleted from both folders -> keep entry and do nothing");
+                    if (Constants.verbose) {
+                        logger.info("entry was deleted from both folders -> keep entry and do nothing");
+                    }
 
                 } else if ((protFile == null || !protFile.exists()) && (sharedFile != null && sharedFile.exists())) {
                     // entry was deleted at prot folder -> delete it from shared folder but keep entry
-                    logger.info("entry was deleted at prot folder -> delete it from shared folder but keep entry");
+                    if (Constants.verbose) {
+                        logger.info("entry was deleted at prot folder -> delete it from shared folder but keep entry");
+                    }
                     deleteFilesFromEntry(entry);
 
                 } else if ((sharedFile == null || !sharedFile.exists()) && (protFile != null && protFile.exists())) {
                     // entry was deleted at shared folder -> assure that it is updated, by syncing from prot to shared
-                    logger.info("entry was deleted at shared folder -> assure that it is updated, by syncing from prot to shared");
+                    if (Constants.verbose) {
+                        logger.info("entry was deleted at shared folder -> assure that it is updated, by syncing from prot to shared");
+                    }
                     SyncModule.toShared(this, entry);
 
                 }
@@ -465,7 +502,7 @@ public final class PReg implements Serializable {
 
     // -- ADD METHODS --
 
-    public PbxEntry add(File file, FolderOption fileFrom) throws ProtException {
+    public PbxEntry add(File file, FolderOption fileFrom) throws ProtboxException {
         if (Constants.verbose) {
             logger.info("Adding " + file.getAbsolutePath());
         }
@@ -473,7 +510,7 @@ public final class PReg implements Serializable {
     }
 
 
-    public PbxEntry addConflicted(File file, FolderOption fileFrom) throws ProtException {
+    public PbxEntry addConflicted(File file, FolderOption fileFrom) throws ProtboxException {
         if (Constants.verbose) {
             logger.info("Adding conflicted copy " + file.getAbsolutePath());
         }
@@ -481,7 +518,7 @@ public final class PReg implements Serializable {
     }
 
 
-    private PbxEntry addAux(File file, boolean conflicted, FolderOption fileFrom) throws ProtException {
+    private PbxEntry addAux(File file, boolean conflicted, FolderOption fileFrom) throws ProtboxException {
         PbxEntry newEntry = null;
         if (fileFrom.equals(FolderOption.PROT)) {
             newEntry = addOnlyToPRegFromProt(file, conflicted);
@@ -500,7 +537,7 @@ public final class PReg implements Serializable {
     }
 
 
-    private PbxEntry addOnlyToPRegFromProt(File file, boolean conflicted) throws ProtException {
+    private PbxEntry addOnlyToPRegFromProt(File file, boolean conflicted) throws ProtboxException {
         try {
             String realName = file.getName();
             if (conflicted && !file.isDirectory()) {
@@ -529,12 +566,12 @@ public final class PReg implements Serializable {
 
             return addFinal(file, parent, realName, encodedName, FolderOption.PROT);
         } catch (IOException | GeneralSecurityException ex) {
-            throw new ProtException(ex);
+            throw new ProtboxException(ex);
         }
     }
 
 
-    private PbxEntry addOnlyToPRegFromShared(File file, boolean conflicted) throws ProtException {
+    private PbxEntry addOnlyToPRegFromShared(File file, boolean conflicted) throws ProtboxException {
         try {
             String encodedName = file.getName();
             String realName = convertEncodedNameToRealName(encodedName);
@@ -563,14 +600,14 @@ public final class PReg implements Serializable {
 
             return addFinal(file, parent, realName, encodedName, FolderOption.SHARED);
         } catch (IOException | GeneralSecurityException ex) {
-            throw new ProtException(ex);
+            throw new ProtboxException(ex);
         }
     }
 
 
     private PbxEntry addFinal(final File file, final PbxFolder parent,
                               final String realName, final String encodedName, final FolderOption fromFolder)
-            throws ProtException, IOException, GeneralSecurityException {
+            throws ProtboxException, IOException, GeneralSecurityException {
 
         if (file.isDirectory()) {
             PbxFolder pair;
@@ -628,11 +665,14 @@ public final class PReg implements Serializable {
 
     // -- NAME CONVERSION METHODS --
 
-    private String convertEncodedNameToRealName(String encodedName) throws ProtException {
+    private String convertEncodedNameToRealName(String encodedName) throws ProtboxException {
 
-        // perform replacements from a RFC 3548 compliant name to a Base64 compliant name
-        String rfc3548Name = encodedName.replaceAll("-", "/").replaceAll("_", "+");
-        byte[] decryptedNameData = decrypt(Base64.decodeBase64(rfc3548Name));
+        // perform replacements from a normal name to a RFC 3548 compliant name
+        String rfc3548Name = encodedName;
+        rfc3548Name = StringUtils.replaceChars(rfc3548Name, '-', '/');
+        rfc3548Name = StringUtils.replaceChars(rfc3548Name, '_', '+');
+
+        byte[] decryptedNameData = decrypt(Base64.decodeBase64(rfc3548Name), false);
 
         try {
             return new String(decryptedNameData, "UTF-8");
@@ -640,23 +680,27 @@ public final class PReg implements Serializable {
         } catch (UnsupportedEncodingException ex) {
             return new String(decryptedNameData);
         }
+
     }
 
 
-    private String convertRealNameToEncodedName(String realName) throws ProtException {
+    private String convertRealNameToEncodedName(String realName) throws ProtboxException {
         String encodedName;
 
         try {
-            byte[] encryptedNameData = encrypt(realName.getBytes("UTF-8"));
+            byte[] encryptedNameData = encrypt(realName.getBytes("UTF-8"), false);
             encodedName = new String(Base64.encodeBase64(encryptedNameData), "UTF-8");
 
         } catch (UnsupportedEncodingException ex) {
-            byte[] encryptedNameData = encrypt(realName.getBytes());
+            byte[] encryptedNameData = encrypt(realName.getBytes(), false);
             encodedName = new String(Base64.encodeBase64(encryptedNameData));
         }
 
-        // perform replacements from a Base64 compliant name to a RFC 3548 compliant name
-        return encodedName.replaceAll("/", "-").replaceAll("\\+", "_");
+        // perform replacements from a RFC 3548 compliant name to a normal name
+        encodedName = StringUtils.replaceChars(encodedName, '/', '-');
+        encodedName = StringUtils.replaceChars(encodedName, '+', '_');
+        return encodedName;
+
     }
 
 
@@ -688,14 +732,16 @@ public final class PReg implements Serializable {
     }
 
 
-    public void delete(Path filePath, FolderOption fromFolder) {
-        if (Constants.verbose) logger.info("Deleting file " + filePath);
+    public void delete(File file, FolderOption fromFolder) {
+        if (Constants.verbose) {
+            logger.info("Deleting file " + file.getAbsolutePath());
+        }
 
-        PbxFolder parent = goToFolder(filePath.getParent().toString(), fromFolder);
+        PbxFolder parent = goToFolder(file.getParentFile().getAbsolutePath(), fromFolder);
         PbxEntry toDelete;
-        toDelete = parent.goToFile(filePath.getFileName().toString());
+        toDelete = parent.goToFile(file.getName());
         if (toDelete == null) {
-            toDelete = parent.goToFolder(filePath.getFileName().toString());
+            toDelete = parent.goToFolder(file.getName());
         }
         deleteFilesFromEntry(toDelete);
     }
@@ -712,34 +758,19 @@ public final class PReg implements Serializable {
             folder.getSubFiles().forEach(this::deleteFilesFromEntry);
         }
 
-//        try {
         File fileAtProt = new File(pair.getProtFolderPath() + File.separator + entry.relativeRealPath());
-            if (fileAtProt.exists()) {
-//                if (entry instanceof PbxFile) {
-//                    PbxFile file = (PbxFile) entry;
-//                    file.createSnapshotFromFile(fileAtProt, FolderOption.PROT);
-//                }
-                SKIP_WATCHER_ENTRIES.add(fileAtProt.getAbsolutePath());
-                SKIP_WATCHER_ENTRIES.add(fileAtProt.getParentFile().getAbsolutePath());
-                Constants.delete(fileAtProt);
-            }
+        if (fileAtProt.exists()) {
+            SKIP_WATCHER_ENTRIES.add(fileAtProt.getAbsolutePath());
+            SKIP_WATCHER_ENTRIES.add(fileAtProt.getParentFile().getAbsolutePath());
+            Constants.delete(fileAtProt);
+        }
 
-            File fileAtShared = new File(pair.getSharedFolderPath() + File.separator + entry.relativeEncodedPath());
-            if (fileAtShared.exists()) {
-//                if (entry instanceof PbxFile) {
-//                    PbxFile file = (PbxFile) entry;
-//                    file.createSnapshotFromFile(fileAtShared, FolderOption.SHARED);
-//                }
-                SKIP_WATCHER_ENTRIES.add(fileAtShared.getAbsolutePath());
-                SKIP_WATCHER_ENTRIES.add(fileAtShared.getParentFile().getAbsolutePath());
-                Constants.delete(fileAtShared);
-            }
-
-//        } catch (ProtException ex) {
-//            if (Constants.verbose) {
-//                logger.error("Error while hiding PReg pair " + entry.toString(), ex);
-//            }
-//        }
+        File fileAtShared = new File(pair.getSharedFolderPath() + File.separator + entry.relativeEncodedPath());
+        if (fileAtShared.exists()) {
+            SKIP_WATCHER_ENTRIES.add(fileAtShared.getAbsolutePath());
+            SKIP_WATCHER_ENTRIES.add(fileAtShared.getParentFile().getAbsolutePath());
+            Constants.delete(fileAtShared);
+        }
 
         entry.areNativeFilesDeleted = true;
     }
@@ -792,7 +823,7 @@ public final class PReg implements Serializable {
 
             SyncModule.toShared(this, pbxFile);
 
-        } catch (ProtException ex) {
+        } catch (ProtboxException ex) {
             if (Constants.verbose) {
                 logger.error("Error while writing file data for " + pbxFile.toString(), ex);
             }
@@ -810,144 +841,119 @@ public final class PReg implements Serializable {
 
 
     private boolean build(final DefaultMutableTreeNode treeRoot, final PbxFolder root) {
-//        final Single<Boolean> deletedFileWasAdded = Single.of(false);
-
         root.getSubFolders().forEach(f -> {
             DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f, true);
             newNode.setAllowsChildren(true);
             build(newNode, f);
-//            if (f.areNativeFilesDeleted || deletedFileWasAdded.value)
             treeRoot.add(newNode);
         });
 
         root.getSubFiles().forEach(f -> {
             DefaultMutableTreeNode newNode = new DefaultMutableTreeNode(f, true);
             newNode.setAllowsChildren(false);
-//            if (f.areNativeFilesDeleted) {
-//                deletedFileWasAdded.value = true;
             treeRoot.add(newNode);
-//            }
         });
 
-//        return deletedFileWasAdded.value;
         return false;
     }
 
 
     // -- CIPHER METHODS --
 
-    public byte[] encrypt(byte[] decryptedData) throws ProtException {
+    public byte[] encrypt(byte[] decryptedData, boolean appendChecksum) throws ProtboxException {
         try {
             CIPHER.init(Cipher.ENCRYPT_MODE, pair.getPairKey());
 
-            byte[] encryptedData = CIPHER.doFinal(decryptedData);
-            byte[] iv = CIPHER.getIV();
+            byte[] integrityControlValue = null;
+            int checksumLength = 0;
+            if (appendChecksum) {
+                Mac mac = Mac.getInstance("HmacSHA512");
+                mac.init(pair.getIntegrityKey());
 
-            if (iv != null) {
-                byte[] result = new byte[16 + encryptedData.length];
-                System.arraycopy(iv, 0, result, 0, 16);
-                System.arraycopy(encryptedData, 0, result, 16, encryptedData.length);
-                return result;
-
-            } else {
-                return encryptedData;
+                integrityControlValue = mac.doFinal(decryptedData);
+                checksumLength = 64;
             }
 
-        } catch (GeneralSecurityException ex) {
-            logger.info(ex.getMessage(), ex);
-            throw new ProtException(ex);
-        }
+            byte[] encryptedData = CIPHER.doFinal(decryptedData);
 
-        // DEPRECATED: PUT REAL SIZE AT THE END OF FILE WITHIN 4 BYTES FOR PADDING SPECIFICATION
-//        try(ByteArrayInputStream in = new ByteArrayInputStream(data)){
-//            int multiplier = 1;
-//            if(algorithm.equalsIgnoreCase("AES"))
-//                multiplier = 16;
-//            else if(algorithm.equalsIgnoreCase("DESede"))
-//                multiplier = 8;
-//            byte[] expandedData = new byte[data.length*multiplier];
-//            System.out.println(expandedData.length);
-//            int realSize = in.read(expandedData);
-////            System.out.println("real size:"+realSize);
-//
-//            // encrypt data with registry's key, which may result in non-padded results
-//            CIPHER.init(Cipher.ENCRYPT_MODE, CIPHER_KEY);
-//            byte[] encryptedBytes = CIPHER.doFinal(expandedData);
-//
-//            // convert the real size into 4 bytes
-//            byte[] realSizeBytes = ByteBuffer.allocate(4).putInt(realSize).array();
-//
-//
-//            // place the real size bytes after the encrypted data array
-//            int resultSize = encryptedBytes.length+4;
-//            List<Byte> collection = new ArrayList<>(resultSize);
-//            for(byte b : encryptedBytes)
-//                collection.add(b);
-//            for(byte b : realSizeBytes)
-//                collection.add(b);
-//
-//            byte[] result = new byte[resultSize];
-//            for(int i = 0; i<collection.size(); i++)
-//                result[i] = collection.get(i);
-//
-//            return result;
-//
-//        }catch (IOException ex){
-//            // this is never going to happen
-//            return null;
-//        }
+            boolean isCBC = pair.getPairAlgorithm().contains("CBC");
+            byte[] iv = CIPHER.getIV();
+            int ivLength = isCBC ? 16 : 0;
+
+            byte[] result = new byte[checksumLength + ivLength + encryptedData.length];
+            if (appendChecksum) {
+                System.arraycopy(integrityControlValue, 0, result, 0, checksumLength);
+            }
+            if (isCBC) {
+                System.arraycopy(iv, 0, result, checksumLength, ivLength);
+            }
+            System.arraycopy(encryptedData, 0, result, checksumLength + ivLength, encryptedData.length);
+            return result;
+
+        } catch (GeneralSecurityException ex) {
+            throw new ProtboxException(ex);
+        }
     }
 
 
-    public byte[] decrypt(byte[] encryptedData) throws ProtException {
+    public byte[] decrypt(byte[] encryptedData, boolean hasChecksum) throws ProtboxException {
         try {
             byte[] dataToDecrypt;
+
+            int checksumLength = hasChecksum ? 64 : 0;
+
             if (pair.getPairAlgorithm().contains("CBC")) {
                 byte[] iv = new byte[16];
-                System.arraycopy(encryptedData, 0, iv, 0, 16);
+                System.arraycopy(encryptedData, checksumLength, iv, 0, 16);
 
-                int dataToDecryptLength = encryptedData.length - 16;
+                int dataToDecryptLength = encryptedData.length - checksumLength - 16;
                 dataToDecrypt = new byte[dataToDecryptLength];
-                System.arraycopy(encryptedData, 16, dataToDecrypt, 0, dataToDecryptLength);
+                System.arraycopy(encryptedData, checksumLength + 16, dataToDecrypt, 0, dataToDecryptLength);
 
                 CIPHER.init(Cipher.DECRYPT_MODE, pair.getPairKey(), new IvParameterSpec(iv));
 
             } else {
+                int dataToDecryptLength = encryptedData.length - checksumLength;
+                dataToDecrypt = new byte[dataToDecryptLength];
+                System.arraycopy(encryptedData, checksumLength, dataToDecrypt, 0, dataToDecryptLength);
+
                 CIPHER.init(Cipher.DECRYPT_MODE, pair.getPairKey());
-                dataToDecrypt = encryptedData;
             }
 
-            return CIPHER.doFinal(dataToDecrypt);
+            byte[] result = CIPHER.doFinal(dataToDecrypt);
+            boolean isValid = true;
+
+            if (hasChecksum) {
+                byte[] fileCheckSum = new byte[checksumLength];
+                System.arraycopy(encryptedData, 0, fileCheckSum, 0, checksumLength);
+
+                Mac mac = Mac.getInstance("HmacSHA512");
+                mac.init(pair.getIntegrityKey());
+                byte[] integrityControlValue = mac.doFinal(result);
+
+                isValid = Arrays.equals(fileCheckSum, integrityControlValue);
+            }
+
+            if (isValid) {
+                return result;
+
+            } else {
+                throw new ProtboxException("Protected file contains invalid checksum.");
+            }
 
         } catch (GeneralSecurityException ex) {
-            logger.info(ex.getMessage(), ex);
-            throw new ProtException(ex);
+            throw new ProtboxException(ex);
         }
-
-        // DEPRECATED: GET REAL SIZE AT THE END OF FILE WITHIN 4 BYTES FOR PADDING SPECIFICATION
-//        // get real size from the last 4 bytes of the file
-//        int len = data.length;
-//        int realSize =
-//                ByteBuffer.wrap(new byte[]{data[len - 4], data[len - 3], data[len - 2], data[len - 1]}).getInt();
-////        System.out.println(realSize);
-//
-//        // get the encrypted data from every byte except for the last 4 and decrypt them with registry's key
-//        data = Arrays.copyOf(data, len-4);
-////        System.out.println(data.length);
-//
-//        CIPHER.init(Cipher.DECRYPT_MODE, CIPHER_KEY);
-//        byte[] decrypted = CIPHER.doFinal(data);
-//        return Arrays.copyOf(decrypted, realSize);
     }
 
 
-    public void changeProtPath(String newPath) throws ProtException {
+    public void changeProtPath(String newPath) throws ProtboxException {
         try {
             TrayApplet.getInstance().setStatus(TrayApplet.TrayStatus.LOADING, "Moving files to new prot folder...");
 
             // 1) remove entries from the syncing threads
             protFolderWatcher.interrupt();
-            Duo<List<PbxEntry>> removedEntries = SyncModule.removeSyncPairsForReg(this);
+            Pair<List<PbxEntry>> removedEntries = SyncModule.removeSyncEntriesOfRegistry(this);
 
 
             // 2) set new path
@@ -962,7 +968,7 @@ public final class PReg implements Serializable {
 
 
             // 4) start new Watcher on the new Folder
-            protFolderWatcher = new Thread(new RegistryWatcher(this, FolderOption.PROT, newProtFile.toPath()));
+            protFolderWatcher = new DefaultWatcher(this, FolderOption.PROT, newProtFile.toPath());
             protFolderWatcher.start();
 
 
@@ -978,7 +984,7 @@ public final class PReg implements Serializable {
 
             TrayApplet.getInstance().setStatus(TrayApplet.TrayStatus.OKAY, "");
         } catch (IOException ex) {
-            throw new ProtException(ex);
+            throw new ProtboxException(ex);
         }
     }
 
