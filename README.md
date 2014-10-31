@@ -1,6 +1,5 @@
 ![Logo](src/main/resources/edduarte/protbox/assets/splash.png)
 =======
-[![Build Status](https://travis-ci.org/edduarte/protbox.svg?branch=master)](https://travis-ci.org/edduarte/protbox)
 
 **Multi-platform application** that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
 
@@ -16,3 +15,22 @@ The strong authentication of people, which is used to enforce the access control
 Protbox randomly generates and uses a key per folder to protect all its contents, including files and sub-directories. Files are encrypted with AES and their integrity is ensured with HMAC-SHA1. Encrypted file names, which contain bytes that are not acceptable for naming files in existing file systems, are coded in a modified Base64 alphabet (formed by letters, decimal digits, underscore, hyphen and dot), which should work in most file systems.
 
 This is a Java prototype that should be able to run on any operating system with a suitable Java Virtual Machine (JVM), and is capable of recognizing any file system. It features a background folder synchronization engine and a graphical user interface for dealing with key distribution requests. This prototype was successfully experimented in both Linux and Windows with three major cloud storage providers: Dropbox, OneDrive and Google Drive.
+
+## How to run:
+
+To run the application:
+
+```
+mvn package
+java -jar target/protbox-2.0-jar-with-dependencies.jar
+```
+
+The application will need to know where to find the PKCS#11 provider that is capable of reading the eID token to be used. In order to include support for PKCS#11 providers in the application, a configuration file must be added to the 'providers' folder (in the same folder as the jar file) with the suffix '.config' and the following contents:
+
+```
+name=[Name of the provider]
+library=[Local path of the provider]
+alias=[Alias of the authentication certificate in the eID token]
+```
+
+The 'example' folder contains the provider and configuration files to read and use the Portuguese Citizen Card for authentication in Protbox.
