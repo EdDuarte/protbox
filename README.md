@@ -12,17 +12,23 @@ The secure sharing includes three different protection attributes:
 
 The strong authentication of people, which is used to enforce the access control to the shared data, relies on the exploitation of nowadays existing electronic, personal identity tokens (eIDs for short).
 
-Protbox randomly generates and uses a key per folder to protect all its contents, including files and sub-directories. Files are encrypted with AES and their integrity is ensured with HMAC-SHA1. Encrypted file names, which contain bytes that are not acceptable for naming files in existing file systems, are coded in a modified Base64 alphabet (formed by letters, decimal digits, underscore, hyphen and dot), which should work in most file systems.
+Protbox randomly generates and uses a key per folder to protect all its contents, including files and sub-directories. Files are encrypted with AES and their integrity is ensured with HMAC-SHA512. Encrypted file names, which contain bytes that are not acceptable for naming files in existing file systems, are coded in a modified Base64 alphabet (formed by letters, decimal digits, underscore, hyphen and dot), which should work in most file systems.
 
 This is a Java prototype that should be able to run on any operating system with a suitable Java Virtual Machine (JVM), and is capable of recognizing any file system. It features a background folder synchronization engine and a graphical user interface for dealing with key distribution requests. This prototype was successfully experimented in both Linux and Windows with three major cloud storage providers: Dropbox, OneDrive and Google Drive.
 
 ## How to run:
 
-To run the application:
+To run the application, use the following commands on the source folder:
 
 ```
 mvn package
 java -jar target/protbox-2.0-app.jar
+```
+
+Alternatively, download the [v2.0 release](https://github.com/edduarte/protbox/releases/tag/v2.0), unpack the compressed file and use the following command:
+
+```
+java -jar protbox-2.0-app.jar
 ```
 
 The application will need to know where to find the PKCS#11 provider that is capable of reading the eID token to be used. In order to include support for PKCS#11 providers in the application, a configuration file must be added to the 'providers' folder (in the same folder as the jar file) with the suffix '.config' and the following contents:
@@ -33,4 +39,4 @@ library=[Local path of the provider]
 alias=[Alias of the authentication certificate in the eID token]
 ```
 
-The 'example' folder contains the provider and configuration files to read and use the Portuguese Citizen Card for authentication in Protbox.
+The 'example' folder contains the required files to read and use the Portuguese Citizen Card for authentication in Protbox.
