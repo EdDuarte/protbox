@@ -16,7 +16,7 @@
 
 package edduarte.protbox.ui.windows;
 
-import edduarte.protbox.Main;
+import edduarte.protbox.Protbox;
 import edduarte.protbox.core.*;
 import edduarte.protbox.core.keyexchange.Request;
 import edduarte.protbox.core.registry.PReg;
@@ -172,9 +172,9 @@ public class NewRegistryWindow extends JFrame {
         File requestFile = new File(sharedFolderPath.toFile(), requestFileName);
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(requestFile))) {
 
-            PbxUser thisUser = Main.getUser();
-            byte[] encodedPublicKey = Main.getCertificateData().getEncodedPublicKey();
-            byte[] signatureBytes = Main.getCertificateData().getSignatureBytes();
+            PbxUser thisUser = Protbox.getUser();
+            byte[] encodedPublicKey = Protbox.getCertificateData().getEncodedPublicKey();
+            byte[] signatureBytes = Protbox.getCertificateData().getSignatureBytes();
 
             // saves the signed public key, the signature and the user data in the request file
             out.writeObject(new Request(thisUser, encodedPublicKey, signatureBytes));
@@ -187,7 +187,7 @@ public class NewRegistryWindow extends JFrame {
             AtomicReference<ResponseWatcher> watcherRef = new AtomicReference<>();
             ResponseWatcher w = new ResponseWatcher(sharedFolderPath, requestHash, response -> {
                 try {
-                    CertificateData certificateData = Main.getCertificateData();
+                    CertificateData certificateData = Protbox.getCertificateData();
 
                     // decrypts key using the previously generated private key
                     Cipher c = Cipher.getInstance("RSA/ECB/PKCS1Padding");
@@ -252,7 +252,7 @@ public class NewRegistryWindow extends JFrame {
             PbxPair pair =
                     new PbxPair(path1.getText(), path2.getText(), algorithm, encryptionKey/*, integrityKey*/);
 
-            PReg registry = new PReg(Main.getUser(), pair, isANewDirectory);
+            PReg registry = new PReg(Protbox.getUser(), pair, isANewDirectory);
             registry.initialize();
 
             PairPanel pairPanel = new PairPanel(registry);
@@ -261,7 +261,7 @@ public class NewRegistryWindow extends JFrame {
             TrayApplet.getInstance().addPairPanel(pairPanel);
 
             if (firstTime) {
-                Main.showTrayApplet();
+                Protbox.showTrayApplet();
             }
 
         } catch (ProtboxException | IOException | GeneralSecurityException | AWTException ex) {

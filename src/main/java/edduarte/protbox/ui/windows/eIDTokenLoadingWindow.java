@@ -16,7 +16,7 @@
 
 package edduarte.protbox.ui.windows;
 
-import edduarte.protbox.Main;
+import edduarte.protbox.Protbox;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.PbxUser;
@@ -31,7 +31,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -101,7 +100,7 @@ public class eIDTokenLoadingWindow extends JFrame {
                 try {
                     Provider p = Security.getProvider(providerName);
                     KeyStore ks = KeyStore.getInstance("PKCS11", p);
-                    String alias = Main.pkcs11Providers.get(providerName);
+                    String alias = Protbox.pkcs11Providers.get(providerName);
                     if (Constants.verbose) {
                         logger.info("eID Token was found!");
                     }
@@ -112,12 +111,8 @@ public class eIDTokenLoadingWindow extends JFrame {
                     try {
                         ks.load(null, null);
 
-                        Certificate cert =ks.getCertificate(alias);
-//                        ((X509Certificate) cert).checkValidity(Constants.getToday());
+                        Certificate cert = ks.getCertificate(alias);
                         Certificate[] chain = ks.getCertificateChain(alias);
-//                        for (Certificate c : chain) {
-//                            ((X509Certificate) c).checkValidity(Constants.getToday());
-//                        }
 
                         if (ks.isKeyEntry(alias)) {
                             PrivateKey privateKey = (PrivateKey) ks.getKey(alias, null);
@@ -142,12 +137,11 @@ public class eIDTokenLoadingWindow extends JFrame {
 
                             // returns certificate, generated pair and signature bytes
                             PbxUser user = new PbxUser(
-                                    chain,                                    // certificate chain
-                                    c,                                        // X509 certificate
-                                    parser.getSerialNumber(),                 // user cc number
-                                    parser.getUserName(),                     // user name
-                                    InetAddress.getLocalHost().getHostName(), // machine name
-                                    Utils.getSerialNumber());                 // machine serial number
+                                    chain,                     // certificate chain
+                                    c,                         // X509 certificate
+                                    parser.getSerialNumber(),  // user cc number
+                                    parser.getUserName()       // user name
+                            );
 
                             CertificateData data = new CertificateData(encodedPublicKey, signatureBytes, pair.getPrivate());
 
@@ -172,6 +166,7 @@ public class eIDTokenLoadingWindow extends JFrame {
                     }
 
                 } catch (Exception ex) {
+                    ex.printStackTrace();
                     if (Constants.verbose) {
                         logger.info("Card was NOT found... Trying again in 3 seconds.");
                     }
@@ -206,13 +201,6 @@ public class eIDTokenLoadingWindow extends JFrame {
         info.setSize(430, 135);
         info.setIconTextGap(JLabel.RIGHT);
         info.setFont(Constants.FONT.deriveFont(14f));
-
-        JLabel machineName = new JLabel();
-        machineName.setText("Machine Name: " + user.getMachineName());
-        machineName.setFont(Constants.FONT);
-        machineName.setBounds(125, 100, 370, 50);
-        add(machineName);
-
 
         cancel.setVisible(false);
         this.setSize(470, 170);

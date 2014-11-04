@@ -16,14 +16,9 @@
 
 package edduarte.protbox.utils;
 
-import org.apache.commons.lang3.SystemUtils;
-
 import java.awt.*;
-import java.io.*;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.text.DecimalFormat;
-import java.util.Scanner;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
@@ -31,112 +26,10 @@ import java.util.Scanner;
  */
 public final class Utils {
 
-    private static final String WINDOWS_KEY = "SerialNumber";
-    private static final String UNIX_KEY = "Serial Number:";
-    private static final String SERIAL_ERROR_MESSAGE = "Could not obtain the current machine's serial number.";
     private static final SecureRandom random = new SecureRandom();
     private static final char[] hexArray = "0123456789abcdef".toCharArray();
-    private static String sn = null;
-    private static MessageDigest md;
 
     private Utils() {
-    }
-
-    public static String getSerialNumber() {
-        if (sn != null) {
-            return sn;
-        }
-
-        if (SystemUtils.IS_OS_WINDOWS) return getSerialNumberWindows();
-        if (SystemUtils.IS_OS_LINUX) return getSerialNumberUnix(false);
-        if (SystemUtils.IS_OS_MAC_OSX) return getSerialNumberUnix(true);
-        return null;
-    }
-
-    private static String getSerialNumberWindows() {
-
-        Process process = getWindowsProcess();
-
-        try (OutputStream os = process.getOutputStream();
-             InputStream is = process.getInputStream();
-             Scanner sc = new Scanner(is)) {
-
-            os.close();
-            while (sc.hasNext()) {
-                String next = sc.next();
-                if (WINDOWS_KEY.equals(next)) {
-                    sn = sc.next().trim();
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(SERIAL_ERROR_MESSAGE, e);
-        }
-
-        if (sn == null) {
-            throw new RuntimeException(SERIAL_ERROR_MESSAGE);
-        }
-
-        return sn;
-    }
-
-    public static String getSerialNumberUnix(boolean isMacOSX) {
-
-        Process process;
-        if (isMacOSX) {
-            process = getMacOSXProcess();
-        } else {
-            process = getLinuxProcess();
-        }
-
-        try (OutputStream os = process.getOutputStream();
-             InputStream is = process.getInputStream();
-             BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
-
-            os.close();
-            String line;
-            while ((line = br.readLine()) != null) {
-                if (line.contains(UNIX_KEY)) {
-                    sn = line.split(UNIX_KEY)[1].trim();
-                    break;
-                }
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(SERIAL_ERROR_MESSAGE, e);
-        }
-
-        if (sn == null) {
-            throw new RuntimeException(SERIAL_ERROR_MESSAGE);
-        }
-
-        return sn;
-    }
-
-    private static Process getWindowsProcess() {
-        Runtime runtime = Runtime.getRuntime();
-        try {
-            return runtime.exec(new String[]{"wmic", "bios", "get", "serialnumber"});
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Process getLinuxProcess() {
-        Runtime runtime = Runtime.getRuntime();
-        try {
-            return runtime.exec(new String[]{"dmidecode", "-t", "system"});
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Process getMacOSXProcess() {
-        Runtime runtime = Runtime.getRuntime();
-        try {
-            return runtime.exec(new String[]{"/usr/sbin/system_profiler", "SPHardwareDataType"});
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     /**

@@ -16,7 +16,7 @@
 
 package edduarte.protbox.core;
 
-import edduarte.protbox.Main;
+import edduarte.protbox.Protbox;
 import org.apache.commons.io.FileDeleteStrategy;
 import org.apache.commons.io.FileUtils;
 
@@ -47,7 +47,7 @@ public final class Constants {
         Font loadedFont = null;
         try {
 
-            InputStream fontStream = Main.class.getResourceAsStream("HelveticaNeue.otf");
+            InputStream fontStream = Protbox.class.getResourceAsStream("HelveticaNeue.otf");
 
             // create the font to use
             loadedFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(12f);
@@ -98,7 +98,7 @@ public final class Constants {
 
         if (result == null) {
             try {
-                InputStream stream = Main.class.getResourceAsStream("assets" + File.separator + resourceFileName);
+                InputStream stream = Protbox.class.getResourceAsStream(resourceFileName);
                 result = ImageIO.read(stream);
                 cachedAssets.put(resourceFileName, result);
 

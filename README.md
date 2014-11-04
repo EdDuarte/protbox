@@ -1,4 +1,4 @@
-![Logo](src/main/resources/edduarte/protbox/assets/splash.png)
+![Logo](src/main/resources/edduarte/protbox/splash.png)
 =======
 
 **Multi-platform application** that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
@@ -22,7 +22,7 @@ To run the application:
 
 ```
 mvn package
-java -jar target/protbox-2.0-jar-with-dependencies.jar
+java -jar target/protbox-2.0-app.jar
 ```
 
 The application will need to know where to find the PKCS#11 provider that is capable of reading the eID token to be used. In order to include support for PKCS#11 providers in the application, a configuration file must be added to the 'providers' folder (in the same folder as the jar file) with the suffix '.config' and the following contents:

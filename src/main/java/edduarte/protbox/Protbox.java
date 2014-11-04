@@ -19,8 +19,8 @@ package edduarte.protbox;
 import com.google.common.collect.Lists;
 import edduarte.protbox.core.CertificateData;
 import edduarte.protbox.core.Constants;
-import edduarte.protbox.core.SavedRegistry;
 import edduarte.protbox.core.PbxUser;
+import edduarte.protbox.core.SavedRegistry;
 import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.ui.TrayApplet;
@@ -60,13 +60,13 @@ import java.util.function.Consumer;
  * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
-public class Main {
+public class Protbox {
     public static final Map<String, String> pkcs11Providers = new HashMap<>();
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+    private static final Logger logger = LoggerFactory.getLogger(Protbox.class);
 
     static {
         try {
-            // Lifts JCA restrictions on AES key length
+            // Lifts JCE restrictions on AES key length
             Class security_class = Class.forName("javax.crypto.JceSecurity");
             Field restricted_field = security_class.getDeclaredField("isRestricted");
             restricted_field.setAccessible(true);
@@ -176,7 +176,7 @@ public class Main {
         }
 
         // adds a shutdown hook to save instantiated directories into files when the application is being closed
-        Runtime.getRuntime().addShutdownHook(new Thread(Main::exit));
+        Runtime.getRuntime().addShutdownHook(new Thread(Protbox::exit));
 
 
         // get system tray and run tray applet
@@ -193,7 +193,7 @@ public class Main {
 
 
         // prompts the user to choose which provider to use
-        ProviderListWindow.showWindow(Main.pkcs11Providers.keySet(), providerName -> {
+        ProviderListWindow.showWindow(Protbox.pkcs11Providers.keySet(), providerName -> {
 
             // loads eID token
             eIDTokenLoadingWindow.showPrompt(providerName, (returnedUser, returnedCertificateData) -> {

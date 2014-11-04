@@ -27,7 +27,6 @@ import edduarte.protbox.utils.listeners.OnKeyReleased;
 import edduarte.protbox.utils.listeners.OnMouseClick;
 import org.apache.commons.lang3.SystemUtils;
 import org.jdesktop.swingx.border.DropShadowBorder;
-import org.jdesktop.xswingx.PromptSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +37,10 @@ import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
 import java.net.URI;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+//import org.jdesktop.xswingx.PromptSupport;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
@@ -56,8 +55,6 @@ public class RestoreFileWindow extends JDialog {
 
         final JTextField searchField = new JTextField();
         searchField.setLayout(null);
-        PromptSupport.setPrompt("  Search for a file to restore...", searchField);
-        PromptSupport.setFocusBehavior(PromptSupport.FocusBehavior.SHOW_PROMPT, searchField);
         searchField.setBounds(2, 2, 301, 26);
         searchField.setBorder(new LineBorder(Color.lightGray));
         searchField.setFont(Constants.FONT);

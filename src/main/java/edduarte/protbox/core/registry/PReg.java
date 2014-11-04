@@ -25,7 +25,7 @@ import edduarte.protbox.core.watcher.DefaultWatcher;
 import edduarte.protbox.core.watcher.RequestWatcher;
 import edduarte.protbox.exception.ProtboxException;
 import edduarte.protbox.ui.TrayApplet;
-import edduarte.protbox.ui.windows.RequestValidationWindow;
+import edduarte.protbox.ui.windows.RequestPromptWindow;
 import edduarte.protbox.utils.Pair;
 import edduarte.protbox.utils.Utils;
 import org.apache.commons.codec.binary.Base64;
@@ -56,11 +56,11 @@ import java.util.stream.Collectors;
  * coherence of the data in Prot folders and Shared folders. It contains structural information
  * about both folders (sub-files and sub-folders, encrypted and decrypted names, last modified
  * dates and lengths of contents).
- *
+ * <p/>
  * Coherency checking and synchronization tasks run on a periodic basis and use that structural
  * information and the effective contents of each {@link PbxEntry} to take the appropriate data
  * transfer decisions.
- *
+ * <p/>
  * Note that a PReg is a local, private data structure that helps a local {\protbox} instance to
  * take the appropriate, local decisions regarding file synchronizations, encryption/decryption
  * and recovery actions. In particular, a PReg is never synchronized with another one.
@@ -185,7 +185,7 @@ public final class PReg implements Serializable {
 
         // starts a file watcher for creation of access request files
         requestFileWatcher = new RequestWatcher(sharedPath, detectedRequest -> {
-            RequestValidationWindow.getInstance(this, detectedRequest);
+            RequestPromptWindow.getInstance(this, detectedRequest);
         });
         requestFileWatcher.start();
 

@@ -101,7 +101,9 @@ abstract class BaseWatcher extends Thread {
                 }
             }
         } catch (InterruptedException ex) {
-            if (Constants.verbose) logger.info("WatchService for " + root.toString() + " stopped.");
+            if (Constants.verbose) {
+                logger.info("WatchService for " + root.toString() + " stopped.");
+            }
         } finally {
             watchService.close();
         }

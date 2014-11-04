@@ -25,7 +25,7 @@ import java.awt.event.KeyListener;
  * either implements this interface (and all the methods it
  * contains) or extends the abstract <code>KeyAdapter</code> class
  * (overriding only the methods of interest).
- * <p>
+ * <p/>
  * The listener object created from that class is then registered with a
  * component using the component's <code>addKeyListener</code>
  * method. A keyboard event is generated when a key is pressed, released,

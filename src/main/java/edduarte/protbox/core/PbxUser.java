@@ -32,22 +32,16 @@ public class PbxUser implements Serializable {
     private final X509Certificate userCertificate;
     private final String ccNumber;
     private final String userName;
-    private final String machineName;
-    private final String machineSerialNo;
 
 
     public PbxUser(Certificate[] certificateChain,
                    X509Certificate userCertificate,
                    String ccNumber,
-                   String userName,
-                   String machineName,
-                   String machineSerialNo) {
+                   String userName) {
         this.certificateChain = certificateChain;
         this.userCertificate = userCertificate;
         this.ccNumber = ccNumber;
         this.userName = userName;
-        this.machineName = machineName;
-        this.machineSerialNo = machineSerialNo;
     }
 
 
@@ -58,11 +52,6 @@ public class PbxUser implements Serializable {
 
     public String getName() {
         return userName;
-    }
-
-
-    public String getMachineName() {
-        return machineName;
     }
 
 
@@ -84,8 +73,7 @@ public class PbxUser implements Serializable {
         PbxUser other = (PbxUser) obj;
         return this.getId().equalsIgnoreCase(other.getId()) &&
                 this.getName().equalsIgnoreCase(other.getName()) &&
-                this.getUserCertificate().equals(other.getUserCertificate()) &&
-                this.machineSerialNo.equals(other.machineSerialNo);
+                this.getUserCertificate().equals(other.getUserCertificate());
     }
 
 

@@ -16,7 +16,7 @@
 
 package edduarte.protbox.ui.windows;
 
-import edduarte.protbox.Main;
+import edduarte.protbox.Protbox;
 import edduarte.protbox.core.Constants;
 import edduarte.protbox.core.FolderValidation;
 import edduarte.protbox.core.registry.PReg;
@@ -27,7 +27,6 @@ import edduarte.protbox.utils.Utils;
 import edduarte.protbox.utils.listeners.OnKeyReleased;
 import edduarte.protbox.utils.listeners.OnMouseClick;
 import ij.io.DirectoryChooser;
-import org.jdesktop.xswingx.PromptSupport;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
@@ -69,7 +68,6 @@ public class ConfigurationWindow extends JDialog {
         label2.setFont(Constants.FONT);
         label2.setBounds(20, 50, 100, 30);
         path = new JTextField(reg.getPair().getProtFolderPath() + "\\");
-        PromptSupport.setPrompt("<none selected>", path);
         path.setMargin(new Insets(0, 10, 0, 10));
         path.setFont(Constants.FONT);
         path.setBorder(new CompoundBorder(new LineBorder(new Color(210, 210, 210), 1, false), new EmptyBorder(0, 3, 0, 0)));
@@ -122,7 +120,7 @@ public class ConfigurationWindow extends JDialog {
                 if (TrayApplet.getInstance().getPairPanels().length == 0) {
 
                     // there are no instances left!
-                    Main.hideTrayApplet();
+                    Protbox.hideTrayApplet();
                     NewRegistryWindow.start(true);
                 }
                 dispose();

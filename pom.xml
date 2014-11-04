@@ -20,7 +20,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.edduarte</groupId>
+    <groupId>edduarte</groupId>
     <artifactId>protbox</artifactId>
     <version>2.0</version>
     <packaging>jar</packaging>
@@ -56,33 +56,52 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
+                    <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.2.1</version>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.15</version>
+                <configuration>
+                    <argLine>-Dfile.encoding=UTF-8</argLine>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.2</version>
                 <executions>
                     <execution>
-                        <id>main</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                            <archive>
-                                <manifest>
-                                    <mainClass>edduarte.protbox.Main</mainClass>
-                                </manifest>
-                                <manifestEntries>
-                                    <Class-Path>.</Class-Path>
-                                </manifestEntries>
-                            </archive>
-                            <finalName>${project.build.finalName}</finalName>
+                            <finalName>${project.build.finalName}-app</finalName>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer" >
+                                    <manifestEntries>
+                                        <Main-Class>edduarte.protbox.Protbox</Main-Class>
+                                    </manifestEntries>
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+                            <filters>
+                                <!--filter to address "Invalid signature file" issue - see http://stackoverflow.com/a/6743609/589215-->
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                         </configuration>
                     </execution>
                 </executions>
@@ -92,14 +111,6 @@
     </build>
 
     <dependencies>
-
-        <dependency>
-            <artifactId>prompt</artifactId>
-            <groupId>xswingx</groupId>
-            <scope>system</scope>
-            <version>1.0</version>
-            <systemPath>${basedir}/lib/prompt.jar</systemPath>
-        </dependency>
 
         <dependency>
             <groupId>org.swinglabs</groupId>

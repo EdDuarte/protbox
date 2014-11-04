@@ -39,19 +39,20 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
+import java.util.Date;
+import java.util.TimerTask;
 
 /**
  * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
  * @version 2.0
  */
-public class RequestValidationWindow extends JFrame {
+public class RequestPromptWindow extends JFrame {
 
-    private static final Logger logger = LoggerFactory.getLogger(RequestValidationWindow.class);
+    private static final Logger logger = LoggerFactory.getLogger(RequestPromptWindow.class);
 
-    private RequestValidationWindow(final PbxPair pair,
-                                    final String sharedFolderName,
-                                    final RequestWatcher.Result request) {
+    private RequestPromptWindow(final PbxPair pair,
+                                final String sharedFolderName,
+                                final RequestWatcher.Result request) {
         super("A new user asked your permission to access the folder " + sharedFolderName + " - Protbox");
         setIconImage(Constants.getAsset("box.png"));
         setLayout(null);
@@ -95,13 +96,6 @@ public class RequestValidationWindow extends JFrame {
         add(info);
 
 
-        JLabel machineName = new JLabel();
-        machineName.setText("Machine Name: " + requestingUser.getMachineName());
-        machineName.setFont(Constants.FONT);
-        machineName.setBounds(125, 100, 370, 50);
-        add(machineName);
-
-
         JLabel allow = new JLabel(new ImageIcon(Constants.getAsset("allow.png")));
         allow.setLayout(null);
         allow.setBounds(110, 175, 122, 39);
@@ -135,9 +129,9 @@ public class RequestValidationWindow extends JFrame {
 
     }
 
-    public static RequestValidationWindow getInstance(final PReg registry, final RequestWatcher.Result request) {
+    public static RequestPromptWindow getInstance(final PReg registry, final RequestWatcher.Result request) {
         String sharedFolderName = registry.getPair().getSharedFolderFile().getName();
-        return new RequestValidationWindow(registry.getPair(), sharedFolderName, request);
+        return new RequestPromptWindow(registry.getPair(), sharedFolderName, request);
     }
 
     private void generateResponseFile(RequestWatcher.Result request,
