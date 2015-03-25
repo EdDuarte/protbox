@@ -1,7 +1,12 @@
 ![Logo](src/main/resources/edduarte/protbox/splash.png)
-=======
 
-**Multi-platform application** that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
+## Paper
+Secure and trustworthy file sharing over cloud storage using eID tokens [(link)](http://arxiv.org/abs/1501.03139)  
+Lecture Notes in Informatics (LNI), Proceedings - Series of the Gesellschaft fur Informatik (GI), Volume P-237, 2014, Pages 73-84  
+Open Identity Summit 2014; Stuttgart; Germany; 4 November 2014 through 6 November 2014; Code 109544
+
+## Introduction
+Protbox is a multi-platform application that aims to introduce confidentiality and access control to data stored in existing cloud storage services.
 
 Confidentiality is provided in a transparent way, similarly to the synchronization with the cloud repositories. Confidential data can be made accessible to others sharing the same cloud folder by means of signed requests exchanged through the same cloud storage; no extra central services are used.
 
@@ -16,8 +21,7 @@ Protbox randomly generates and uses a key per folder to protect all its contents
 
 This is a Java prototype that should be able to run on any operating system with a suitable Java Virtual Machine (JVM), and is capable of recognizing any file system. It features a background folder synchronization engine and a graphical user interface for dealing with key distribution requests. This prototype was successfully experimented in both Linux and Windows with three major cloud storage providers: Dropbox, OneDrive and Google Drive.
 
-## How to run:
-
+## How to run
 To run the application, use the following commands on the source folder:
 
 ```
