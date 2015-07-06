@@ -43,12 +43,13 @@ import java.util.Date;
 import java.util.TimerTask;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class RequestPromptWindow extends JFrame {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestPromptWindow.class);
+
 
     private RequestPromptWindow(final PbxPair pair,
                                 final String sharedFolderName,
@@ -129,10 +130,12 @@ public class RequestPromptWindow extends JFrame {
 
     }
 
+
     public static RequestPromptWindow getInstance(final PReg registry, final RequestWatcher.Result request) {
         String sharedFolderName = registry.getPair().getSharedFolderFile().getName();
         return new RequestPromptWindow(registry.getPair(), sharedFolderName, request);
     }
+
 
     private void generateResponseFile(RequestWatcher.Result request,
                                       PbxPair pair) {

@@ -20,7 +20,7 @@ import java.io.Serializable;
 import java.security.PrivateKey;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class CertificateData implements Serializable {
@@ -28,8 +28,11 @@ public class CertificateData implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final byte[] encodedPublicKey;
+
     private final byte[] signatureBytes;
+
     private final PrivateKey exchangePrivateKey;
+
 
     public CertificateData(byte[] encodedPublicKey, byte[] signatureBytes, PrivateKey exchangePrivateKey) {
 
@@ -38,13 +41,16 @@ public class CertificateData implements Serializable {
         this.exchangePrivateKey = exchangePrivateKey;
     }
 
+
     public byte[] getEncodedPublicKey() {
         return encodedPublicKey;
     }
 
+
     public byte[] getSignatureBytes() {
         return signatureBytes;
     }
+
 
     public PrivateKey getExchangePrivateKey() {
         return exchangePrivateKey;

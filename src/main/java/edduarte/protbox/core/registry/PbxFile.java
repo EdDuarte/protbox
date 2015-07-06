@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * variables as {@link PbxEntry}, a PbxFile is also represented by a set of snapshots, each one
  * representing a past state of the file's data, size and last modified date.
  *
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class PbxFile extends PbxEntry implements Serializable {
@@ -49,6 +49,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private SnapshotStack snapshotStack;
+
     private BackupPolicy backupPolicy;
 
 
@@ -157,9 +158,11 @@ public final class PbxFile extends PbxEntry implements Serializable {
         }
     }
 
+
     public BackupPolicy getBackupPolicy() {
         return backupPolicy;
     }
+
 
     public void setBackupPolicy(BackupPolicy backupPolicy) {
         if (!backupPolicy.equals(BackupPolicy.Ask)) {
@@ -184,6 +187,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
             this.backupPolicy = backupPolicy;
         }
     }
+
 
     /**
      * Suggests Java Garbage Collector to stop storing this file's data.
@@ -211,6 +215,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
 
         private int maxBackupSize;
 
+
         private BackupPolicy(int maxBackupSize) {
             this.maxBackupSize = maxBackupSize;
         }
@@ -220,7 +225,9 @@ public final class PbxFile extends PbxEntry implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private final byte[] data;
+
         private final long dataSize;
+
         private final Date lastModified;
 
 
@@ -265,6 +272,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
                     Constants.formatDate(getLastModifiedDate());
         }
 
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -275,6 +283,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
                     Arrays.equals(data, snapshot.data) &&
                     lastModified.equals(snapshot.lastModified);
         }
+
 
         @Override
         public int hashCode() {
@@ -290,6 +299,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
         private SnapshotStack() {
             super();
         }
+
 
         @Override
         public void push(Snapshot newSnapshot) {
@@ -311,6 +321,7 @@ public final class PbxFile extends PbxEntry implements Serializable {
                 forcePush(newSnapshot);
             }
         }
+
 
         public void forcePush(Snapshot newSnapshot) {
             super.push(newSnapshot);

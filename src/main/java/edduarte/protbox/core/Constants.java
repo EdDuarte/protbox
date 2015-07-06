@@ -29,12 +29,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Stores common elements or default values used throughout the application.
  *
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class Constants {
@@ -42,27 +46,6 @@ public final class Constants {
     public static final char SPECIAL_FILE_FIRST_CHAR = '_';
 
     public static final Font FONT;
-
-    static {
-        Font loadedFont = null;
-        try {
-
-            InputStream fontStream = Protbox.class.getResourceAsStream("HelveticaNeue.otf");
-
-            // create the font to use
-            loadedFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(12f);
-
-            // register the font
-            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            ge.registerFont(loadedFont);
-
-        } catch (IOException | FontFormatException ex) {
-            ex.printStackTrace();
-            System.exit(1);
-        }
-
-        FONT = loadedFont;
-    }
 
     public static final String INSTALL_DIR = new File(
             Constants.class.getProtectionDomain()
@@ -89,9 +72,32 @@ public final class Constants {
 
     public static boolean verbose = false;
 
+    static {
+        Font loadedFont = null;
+        try {
+
+            InputStream fontStream = Protbox.class.getResourceAsStream("HelveticaNeue.otf");
+
+            // create the font to use
+            loadedFont = Font.createFont(Font.TRUETYPE_FONT, fontStream).deriveFont(12f);
+
+            // register the font
+            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(loadedFont);
+
+        } catch (IOException | FontFormatException ex) {
+            ex.printStackTrace();
+            System.exit(1);
+        }
+
+        FONT = loadedFont;
+    }
+
+
     public static String formatDate(Date date) {
         return DATE_FORMAT.format(date);
     }
+
 
     public static BufferedImage getAsset(String resourceFileName) {
         BufferedImage result = cachedAssets.get(resourceFileName);
@@ -114,6 +120,7 @@ public final class Constants {
         return result;
     }
 
+
     public static void delete(File fileToDelete) {
 
         if (fileToDelete == null) {
@@ -131,6 +138,7 @@ public final class Constants {
             fileToDelete.deleteOnExit();
         }
     }
+
 
     /**
      * Moves all contents from the first specified registry to the second specified
@@ -156,6 +164,7 @@ public final class Constants {
             throw new IOException("Specified registry is not a folder.", ex);
         }
     }
+
 
     /**
      * Get the current date and time

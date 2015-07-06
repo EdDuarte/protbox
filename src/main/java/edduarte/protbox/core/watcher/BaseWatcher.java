@@ -27,14 +27,16 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 abstract class BaseWatcher extends Thread {
     private final static Logger logger = LoggerFactory.getLogger(DefaultWatcher.class);
 
     private final WatchService watchService = FileSystems.getDefault().newWatchService();
+
     private final Path root;
+
 
     public BaseWatcher(Path root) throws IOException {
         this.root = root;

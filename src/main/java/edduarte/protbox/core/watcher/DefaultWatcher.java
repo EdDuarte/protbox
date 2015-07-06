@@ -29,13 +29,14 @@ import java.nio.file.Path;
 import java.util.Collections;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class DefaultWatcher extends BaseWatcher {
     private final static Logger logger = LoggerFactory.getLogger(DefaultWatcher.class);
 
     private PReg reg;
+
     private FolderOption fromFolder;
 
 
@@ -44,6 +45,7 @@ public final class DefaultWatcher extends BaseWatcher {
         this.reg = reg;
         this.fromFolder = fromFolder;
     }
+
 
     @Override
     protected void onFileCreated(File createdFile) throws ProtboxException, IOException {
@@ -63,6 +65,7 @@ public final class DefaultWatcher extends BaseWatcher {
             reg.add(createdFile, fromFolder);
         }
     }
+
 
     @Override
     protected void onFileDeleted(File deletedFile) throws ProtboxException, IOException {

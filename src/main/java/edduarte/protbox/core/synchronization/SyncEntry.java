@@ -20,17 +20,20 @@ import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.core.registry.PbxEntry;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 final class SyncEntry {
     final PReg reg;
+
     final PbxEntry entry;
+
 
     SyncEntry(PReg reg, PbxEntry entry) {
         this.reg = reg;
         this.entry = entry;
     }
+
 
     @Override
     public boolean equals(Object obj) {

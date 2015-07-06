@@ -35,18 +35,22 @@ import java.util.Queue;
 import java.util.concurrent.PriorityBlockingQueue;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class SyncModule {
     private static final Logger logger = LoggerFactory.getLogger(SyncModule.class);
 
     private static final Queue<SyncEntry> toProt = new PriorityBlockingQueue<>(10, new FileSizeComparator());
+
     private static final Queue<SyncEntry> toShared = new PriorityBlockingQueue<>(10, new FileSizeComparator());
+
     private static Thread t1, t2; // singleton threads
+
 
     private SyncModule() {
     }
+
 
     public static void start() {
         if (t1 == null) {

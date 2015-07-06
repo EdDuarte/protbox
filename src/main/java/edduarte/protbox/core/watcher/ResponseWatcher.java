@@ -34,14 +34,16 @@ import java.util.TimerTask;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class ResponseWatcher extends BaseWatcher {
     private final static Logger logger = LoggerFactory.getLogger(ResponseWatcher.class);
 
     private final String requestHash;
+
     private final Consumer<Response> responseConsumer;
+
     private final Set<String> alreadyReceivedResponseHashes;
 
 
@@ -51,6 +53,7 @@ public class ResponseWatcher extends BaseWatcher {
         this.alreadyReceivedResponseHashes = new HashSet<>();
         this.responseConsumer = onResponseConsumer;
     }
+
 
     @Override
     protected void onFileCreated(File createdFile) throws ProtboxException, IOException {
@@ -102,6 +105,7 @@ public class ResponseWatcher extends BaseWatcher {
             }
         }
     }
+
 
     @Override
     protected void onFileDeleted(File deletedFile) throws ProtboxException, IOException {

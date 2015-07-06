@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.Serializable;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class SavedRegistry implements Serializable {
@@ -28,7 +28,9 @@ public class SavedRegistry implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public final File serializedFile;
+
     public final byte[] registryDecryptedData;
+
 
     public SavedRegistry(File serializedFile, byte[] registryDecryptedData) {
         this.serializedFile = serializedFile;

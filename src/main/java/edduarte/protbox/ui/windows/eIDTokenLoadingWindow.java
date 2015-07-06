@@ -40,7 +40,7 @@ import java.util.TimerTask;
 import java.util.function.BiConsumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class eIDTokenLoadingWindow extends JFrame {
@@ -48,7 +48,9 @@ public class eIDTokenLoadingWindow extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(eIDTokenLoadingWindow.class);
 
     private static eIDTokenLoadingWindow instance;
+
     private JLabel info, cancel;
+
     private ImageIcon loadingIcon = new ImageIcon(new File(Constants.INSTALL_DIR, "vfl3Wt7C").getAbsolutePath());
 
 
@@ -175,6 +177,7 @@ public class eIDTokenLoadingWindow extends JFrame {
         }, 0, 3000);
     }
 
+
     public static eIDTokenLoadingWindow showPrompt(final String providerName,
                                                    final BiConsumer<PbxUser, CertificateData> consumer) {
         if (instance == null) {
@@ -186,15 +189,18 @@ public class eIDTokenLoadingWindow extends JFrame {
         return instance;
     }
 
+
     private void setInfoWithLooking() {
         info.setText("Please insert your eID token...");
         info.setIcon(new ImageIcon(Constants.getAsset("id-card.png")));
     }
 
+
     private void setInfoWithLoading() {
         info.setIcon(loadingIcon);
         info.setText("Reading token data ...");
     }
+
 
     private void setInfoWithUser(PbxUser user) {
         info.setText(user.toString());

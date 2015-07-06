@@ -21,7 +21,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class PbxUser implements Serializable {
@@ -29,8 +29,11 @@ public class PbxUser implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Certificate[] certificateChain;
+
     private final X509Certificate userCertificate;
+
     private final String ccNumber;
+
     private final String userName;
 
 

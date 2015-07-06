@@ -18,18 +18,21 @@ package edduarte.protbox.utils;
 
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class Pair<T> {
 
     public final T first;
+
     public final T second;
+
 
     private Pair(T first, T second) {
         this.first = first;
         this.second = second;
     }
+
 
     public static <T> Pair<T> of(T first, T second) {
         if (first == null) {
@@ -40,6 +43,7 @@ public class Pair<T> {
         }
         return new Pair<T>(first, second);
     }
+
 
     @Override
     public boolean equals(Object o) {
@@ -54,12 +58,14 @@ public class Pair<T> {
         return true;
     }
 
+
     @Override
     public int hashCode() {
         int result = first.hashCode();
         result = 31 * result + second.hashCode();
         return result;
     }
+
 
     @Override
     public String toString() {

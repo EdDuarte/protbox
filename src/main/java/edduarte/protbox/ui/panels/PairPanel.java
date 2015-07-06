@@ -32,13 +32,15 @@ import java.awt.event.MouseEvent;
 import java.io.IOException;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class PairPanel extends JLabel {
 
     private final JLabel revertButton, configButton;
+
     private final PReg reg;
+
 
     public PairPanel(final PReg reg) {
         this.reg = reg;
@@ -89,10 +91,12 @@ public class PairPanel extends JLabel {
                 go(e);
             }
 
+
             @Override
             public void mouseReleased(MouseEvent e) {
                 go(e);
             }
+
 
             private void go(MouseEvent e) {
                 if (e.isPopupTrigger()) {
@@ -137,6 +141,7 @@ public class PairPanel extends JLabel {
             mouseHovering();
         }
 
+
         @Override
         public void mouseExited(MouseEvent e) {
             mouseStopHovering();
@@ -148,14 +153,17 @@ public class PairPanel extends JLabel {
 
         private FolderOption folderToOpen;
 
+
         private OpenFolderListener(FolderOption folderToOpen) {
             this.folderToOpen = folderToOpen;
         }
+
 
         @Override
         public void actionPerformed(ActionEvent e) {
             go();
         }
+
 
         @Override
         public void mouseClicked(MouseEvent e) {
@@ -164,6 +172,7 @@ public class PairPanel extends JLabel {
                 go();
             }
         }
+
 
         private void go() {
             try {

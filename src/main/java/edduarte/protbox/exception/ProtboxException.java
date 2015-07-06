@@ -17,11 +17,12 @@
 package edduarte.protbox.exception;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class ProtboxException extends Exception {
     private static final long serialVersionUID = 1L;
+
 
     /**
      * Constructor with message.
@@ -32,6 +33,7 @@ public class ProtboxException extends Exception {
         super(m);
     }
 
+
     /**
      * Constructor with protbox.exception.
      *
@@ -40,6 +42,7 @@ public class ProtboxException extends Exception {
     public ProtboxException(final Exception e) {
         super(e);
     }
+
 
     /**
      * Constructor with message and throwable protbox.exception.

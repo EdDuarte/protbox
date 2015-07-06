@@ -21,16 +21,19 @@ import java.security.SecureRandom;
 import java.text.DecimalFormat;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class Utils {
 
     private static final SecureRandom random = new SecureRandom();
+
     private static final char[] hexArray = "0123456789abcdef".toCharArray();
+
 
     private Utils() {
     }
+
 
     /**
      * Generates and returns a 128-bit random hash in hexadecimal format.
@@ -41,6 +44,7 @@ public final class Utils {
         return bytesToHex(bytes);
     }
 
+
     private static String bytesToHex(byte[] bytes) {
         char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
@@ -50,6 +54,7 @@ public final class Utils {
         }
         return new String(hexChars);
     }
+
 
     /**
      * The color data the calendar stores is an int. We want it in hex so that
@@ -75,6 +80,7 @@ public final class Utils {
         }
     }
 
+
     public static String capitalizeWord(String str) {
         int strLen;
         if (str == null || (strLen = str.length()) == 0) {
@@ -85,6 +91,7 @@ public final class Utils {
                 .append(str.substring(1))
                 .toString();
     }
+
 
     /**
      * Centers the specified component based on the user main screen dimensions and resolution.
@@ -98,6 +105,7 @@ public final class Utils {
         final int y = (dim.height - component.getHeight()) / 2;
         component.setLocation(x, y);
     }
+
 
     private static int getScreenID(Component component) {
         int scrID = 1;
@@ -113,6 +121,7 @@ public final class Utils {
         return scrID;
     }
 
+
     private static Dimension getScreenDimension(int scrID) {
         Dimension d = new Dimension(0, 0);
         if (scrID > 0) {
@@ -122,6 +131,7 @@ public final class Utils {
         }
         return d;
     }
+
 
     public static String readableFileSize(long size) {
         if (size <= 0) {

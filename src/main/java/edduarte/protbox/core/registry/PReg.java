@@ -56,16 +56,16 @@ import java.util.stream.Collectors;
  * coherence of the data in Prot folders and Shared folders. It contains structural information
  * about both folders (sub-files and sub-folders, encrypted and decrypted names, last modified
  * dates and lengths of contents).
- * <p/>
+ * <p>
  * Coherency checking and synchronization tasks run on a periodic basis and use that structural
  * information and the effective contents of each {@link PbxEntry} to take the appropriate data
  * transfer decisions.
- * <p/>
+ * <p>
  * Note that a PReg is a local, private data structure that helps a local {\protbox} instance to
  * take the appropriate, local decisions regarding file synchronizations, encryption/decryption
  * and recovery actions. In particular, a PReg is never synchronized with another one.
  *
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class PReg implements Serializable {
@@ -151,6 +151,7 @@ public final class PReg implements Serializable {
         }
     }
 
+
     public void initialize() throws GeneralSecurityException, IOException {
         if (initialized) {
             return;
@@ -192,6 +193,7 @@ public final class PReg implements Serializable {
         initialized = true;
     }
 
+
     public void stop() {
         if (initialized) {
             timerIndex.cancel();
@@ -213,6 +215,7 @@ public final class PReg implements Serializable {
         }
     }
 
+
     private PbxFolder goToFolder(String path, FolderOption at) {
 
         String relative = getRelativePath(path, at);
@@ -229,6 +232,7 @@ public final class PReg implements Serializable {
         return atFolder;
     }
 
+
     private String getRelativePath(String absolutePath, FolderOption at) {
         String toRemoveFromPath = "";
         if (at.equals(FolderOption.SHARED))
@@ -243,6 +247,7 @@ public final class PReg implements Serializable {
 
     // -- INTEGRITY CHECKING METHODS --
 
+
     public void executeIntegrityCheck() throws ProtboxException {
         if (currentlyIndexing) {
             return;
@@ -251,6 +256,7 @@ public final class PReg implements Serializable {
         integrityCheck(root, pair.getSharedFolderFile(), pair.getProtFolderFile());
         currentlyIndexing = false;
     }
+
 
     private void integrityCheck(PbxFolder folder, File sharedFolder, File protFolder) throws ProtboxException {
         if (folder == null)
@@ -343,6 +349,7 @@ public final class PReg implements Serializable {
             }
         }
     }
+
 
     private PbxEntry evaluate(PbxEntry entry, File sharedFile, File protFile) throws ProtboxException {
         try {
@@ -501,6 +508,7 @@ public final class PReg implements Serializable {
 
 
     // -- ADD METHODS --
+
 
     public PbxEntry add(File file, FolderOption fileFrom) throws ProtboxException {
         if (Constants.verbose) {
@@ -665,6 +673,7 @@ public final class PReg implements Serializable {
 
     // -- NAME CONVERSION METHODS --
 
+
     private String convertEncodedNameToRealName(String encodedName) throws ProtboxException {
 
         // perform replacements from a normal name to a RFC 3548 compliant name
@@ -721,6 +730,7 @@ public final class PReg implements Serializable {
 
 
     // -- DELETE METHODS --
+
 
     public void permanentDelete(PbxEntry entry) {
         deleteFilesFromEntry(entry);
@@ -801,6 +811,7 @@ public final class PReg implements Serializable {
         SyncModule.toShared(this, pbxFolder);
     }
 
+
     /**
      * Shows the folder represented by the specified entry, reversing the delete
      * process on both PROT and SHARED folders.
@@ -859,6 +870,7 @@ public final class PReg implements Serializable {
 
 
     // -- CIPHER METHODS --
+
 
     public byte[] encrypt(byte[] decryptedData, boolean appendChecksum) throws ProtboxException {
         try {
@@ -1047,6 +1059,7 @@ public final class PReg implements Serializable {
         sb.append("\n");
         return print(sb, root, indent, indent).toString();
     }
+
 
     private StringBuffer print(StringBuffer sb, PbxFolder root, String originalIndent, String indent) {
 

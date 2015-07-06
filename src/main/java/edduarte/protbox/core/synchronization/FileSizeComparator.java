@@ -23,7 +23,7 @@ import edduarte.protbox.core.registry.PbxFolder;
 import java.util.Comparator;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 final class FileSizeComparator implements Comparator<SyncEntry> {

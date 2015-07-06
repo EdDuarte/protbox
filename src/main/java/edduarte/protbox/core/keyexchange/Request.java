@@ -21,7 +21,7 @@ import edduarte.protbox.core.PbxUser;
 import java.io.Serializable;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class Request implements Serializable {
@@ -29,8 +29,11 @@ public class Request implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public final PbxUser requestingUser;
+
     public final byte[] encodedUserPublicKey;
+
     public final byte[] signatureByteArray;
+
 
     public Request(PbxUser requestingUser, byte[] encodedUserPublicKey, byte[] signatureByteArray) {
         this.requestingUser = requestingUser;

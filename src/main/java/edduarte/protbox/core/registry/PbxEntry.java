@@ -19,16 +19,20 @@ package edduarte.protbox.core.registry;
 import java.io.Serializable;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public abstract class PbxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
     protected final PReg parentRegistry;
+
     private final PbxFolder parentFolder;
+
     private final String encodedName;
+
     private final String realName;
+
     boolean areNativeFilesDeleted;
 
 
@@ -43,12 +47,14 @@ public abstract class PbxEntry implements Serializable {
         this.areNativeFilesDeleted = false;
     }
 
+
     /**
      * The parentFolder is a Folder Entry(PbxFolder).
      */
     public PbxFolder parentFolder() {
         return parentFolder;
     }
+
 
     /**
      * The encoded name is name used in the shared folder,
@@ -57,6 +63,7 @@ public abstract class PbxEntry implements Serializable {
     public String encodedName() {
         return encodedName;
     }
+
 
     /**
      * The real name of the entry, used in the Prot folder.
@@ -77,6 +84,7 @@ public abstract class PbxEntry implements Serializable {
         return path + this.encodedName;
     }
 
+
     /**
      * Returns the relative path from the root to this file, constructed with the real names
      * and including extensions (only available if this entry is a file).
@@ -88,6 +96,7 @@ public abstract class PbxEntry implements Serializable {
             path = path + parentFolder.relativeRealPath() + java.io.File.separator;
         return path + this.realName;
     }
+
 
     /**
      * Returns if the files or folders represented by this entry are deleted from its native folders.

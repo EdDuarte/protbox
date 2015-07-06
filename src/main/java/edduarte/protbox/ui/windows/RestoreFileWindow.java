@@ -32,7 +32,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
-import javax.swing.tree.*;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.DefaultTreeModel;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreeSelectionModel;
 import java.awt.*;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowFocusListener;
@@ -43,11 +47,12 @@ import java.util.regex.Pattern;
 //import org.jdesktop.xswingx.PromptSupport;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class RestoreFileWindow extends JDialog {
     private static final Logger logger = LoggerFactory.getLogger(RestoreFileWindow.class);
+
 
     private RestoreFileWindow(final PReg registry) {
         super();
@@ -276,10 +281,12 @@ public class RestoreFileWindow extends JDialog {
         addWindowFocusListener(new WindowFocusListener() {
             private boolean gained = false;
 
+
             @Override
             public void windowGainedFocus(WindowEvent e) {
                 gained = true;
             }
+
 
             @Override
             public void windowLostFocus(WindowEvent e) {
@@ -323,9 +330,11 @@ public class RestoreFileWindow extends JDialog {
 
         private final JTextField searchField;
 
+
         public SearchableTreeCellRenderer(JTextField searchField) {
             this.searchField = searchField;
         }
+
 
         @Override
         public Component getTreeCellRendererComponent(

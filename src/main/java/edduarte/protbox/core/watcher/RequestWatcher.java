@@ -25,7 +25,12 @@ import edduarte.protbox.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,13 +39,14 @@ import java.util.TimerTask;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class RequestWatcher extends BaseWatcher {
     private final static Logger logger = LoggerFactory.getLogger(RequestWatcher.class);
 
     private final Consumer<Result> requestConsumer;
+
     private final Set<String> alreadyReceivedRequestHashes;
 
 
@@ -49,6 +55,7 @@ public class RequestWatcher extends BaseWatcher {
         this.alreadyReceivedRequestHashes = new HashSet<>();
         this.requestConsumer = onRequestConsumer;
     }
+
 
     @Override
     protected void onFileCreated(File createdFile) throws ProtboxException, IOException {
@@ -96,20 +103,26 @@ public class RequestWatcher extends BaseWatcher {
         }
     }
 
+
     @Override
     protected void onFileDeleted(File deletedFile) throws ProtboxException, IOException {
     }
 
+
     public static class Result {
         private final String requestHash;
+
         private final File parentFile;
+
         private final Request detectedRequest;
+
 
         private Result(String requestHash, File parentFile, Request detectedRequest) {
             this.requestHash = requestHash;
             this.parentFile = parentFile;
             this.detectedRequest = detectedRequest;
         }
+
 
         public void createResponseFile(Response response) throws IOException {
             String responseFileName = Constants.SPECIAL_FILE_FIRST_CHAR +
@@ -123,13 +136,16 @@ public class RequestWatcher extends BaseWatcher {
             }
         }
 
+
         public PbxUser getRequestingUser() {
             return detectedRequest.requestingUser;
         }
 
+
         public byte[] getEncodedUserPublicKey() {
             return detectedRequest.encodedUserPublicKey;
         }
+
 
         public byte[] getSignatureByteArray() {
             return detectedRequest.signatureByteArray;

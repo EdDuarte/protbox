@@ -51,18 +51,32 @@ import java.security.GeneralSecurityException;
 import java.security.Provider;
 import java.security.ProviderException;
 import java.security.Security;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class Protbox {
     public static final Map<String, String> pkcs11Providers = new HashMap<>();
+
     private static final Logger logger = LoggerFactory.getLogger(Protbox.class);
+
+    private static PbxUser user;
+
+    private static CertificateData certificateData;
+
+    private static TrayApplet trayApplet;
+
+    private static SystemTray tray;
+
+    private static SecretKey registriesPasswordKey;
 
     static {
         try {
@@ -76,12 +90,6 @@ public class Protbox {
             logger.error(ex.getMessage(), ex);
         }
     }
-
-    private static PbxUser user;
-    private static CertificateData certificateData;
-    private static TrayApplet trayApplet;
-    private static SystemTray tray;
-    private static SecretKey registriesPasswordKey;
 
 
     public static void main(String... args) {

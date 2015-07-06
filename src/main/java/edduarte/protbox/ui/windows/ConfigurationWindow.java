@@ -41,15 +41,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class ConfigurationWindow extends JDialog {
     private static final Map<PReg, ConfigurationWindow> instances = new HashMap<>();
+
     private transient static org.slf4j.Logger logger = LoggerFactory.getLogger(ConfigurationWindow.class);
+
     private PReg reg;
+
     private JTextField path;
+
     private JLabel ok;
+
 
     private ConfigurationWindow(final PReg reg, final PairPanel instanceCell) {
         super();
@@ -182,12 +187,14 @@ public class ConfigurationWindow extends JDialog {
         setVisible(true);
     }
 
+
     public static void closeAllInstances() {
         for (PReg d : instances.keySet()) {
             instances.get(d).dispose();
         }
         instances.clear();
     }
+
 
     public static ConfigurationWindow getInstance(final PReg directory, final PairPanel instanceCell) {
         ConfigurationWindow newInstance = instances.get(directory);
@@ -199,6 +206,7 @@ public class ConfigurationWindow extends JDialog {
         }
         return newInstance;
     }
+
 
     private void check() {
         String protPath = reg.getPair().getProtFolderPath();
@@ -216,6 +224,7 @@ public class ConfigurationWindow extends JDialog {
 
         ok.setEnabled(false);
     }
+
 
     @Override
     public void dispose() {

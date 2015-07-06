@@ -32,12 +32,14 @@ import java.util.Arrays;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class InsertPasswordWindow extends JFrame {
     private JPasswordField field;
+
     private Consumer<String> consumer;
+
 
     private InsertPasswordWindow(Consumer<String> consumer) {
         super("Insert the saved directories password - Protbox");
@@ -128,10 +130,12 @@ public class InsertPasswordWindow extends JFrame {
     private class LimitedFieldDocument extends PlainDocument implements Document {
         private int limit;
 
+
         LimitedFieldDocument(int limit) {
             super();
             this.limit = limit;
         }
+
 
         @Override
         public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {

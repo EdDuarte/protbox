@@ -36,16 +36,20 @@ import java.util.Vector;
 import java.util.function.Consumer;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class ProviderListWindow extends JFrame {
     private static final Logger logger = LoggerFactory.getLogger(ProviderListWindow.class);
 
     private Consumer<String> selectedProviderConsumer;
+
     private JList<String> jList;
+
     private JLabel action;
+
     private boolean providerWasSelected = false;
+
 
     private ProviderListWindow(final Vector<String> providerNames, final Consumer<String> selectedProviderConsumer) {
         super("Providers - Protbox");
@@ -92,17 +96,20 @@ public class ProviderListWindow extends JFrame {
                 }
             }
 
+
             @Override
             public void mouseEntered(MouseEvent e) {
                 over[0] = jList.locationToIndex(e.getPoint());
                 jList.repaint();
             }
 
+
             @Override
             public void mouseExited(MouseEvent e) {
                 over[0] = -1;
                 jList.repaint();
             }
+
 
             @Override
             public void mouseMoved(MouseEvent e) {

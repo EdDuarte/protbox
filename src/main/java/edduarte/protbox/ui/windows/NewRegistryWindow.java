@@ -17,7 +17,11 @@
 package edduarte.protbox.ui.windows;
 
 import edduarte.protbox.Protbox;
-import edduarte.protbox.core.*;
+import edduarte.protbox.core.CertificateData;
+import edduarte.protbox.core.Constants;
+import edduarte.protbox.core.FolderValidation;
+import edduarte.protbox.core.PbxPair;
+import edduarte.protbox.core.PbxUser;
 import edduarte.protbox.core.keyexchange.Request;
 import edduarte.protbox.core.registry.PReg;
 import edduarte.protbox.core.watcher.ResponseWatcher;
@@ -59,7 +63,7 @@ import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class NewRegistryWindow extends JFrame {
@@ -69,13 +73,21 @@ public class NewRegistryWindow extends JFrame {
     private static NewRegistryWindow instance;
 
     private final boolean firstTime;
+
     private boolean usedCloseButton;
+
     private int SPACING = 0;
+
     private Container previousCard;
+
     private JTextField path1;
+
     private JTextField path2;
+
     private JComboBox<String> combo1, combo2;
+
     private JButton go;
+
 
     private NewRegistryWindow(final boolean firstTime) {
         super("Create new directory pair - Protbox");
@@ -95,6 +107,7 @@ public class NewRegistryWindow extends JFrame {
         setVisible(true);
     }
 
+
     public static NewRegistryWindow start(final boolean firstTime) {
         if (instance == null) {
             instance = new NewRegistryWindow(firstTime);
@@ -104,6 +117,7 @@ public class NewRegistryWindow extends JFrame {
         }
         return instance;
     }
+
 
     private void check1() {
         if (!path1.getText().equals("") && !path2.getText().equals("")) {
@@ -118,6 +132,7 @@ public class NewRegistryWindow extends JFrame {
         go.setEnabled(false);
     }
 
+
     private void go0() {
         Container aux = getContentPane();
         setContentPane(previousCard);
@@ -125,6 +140,7 @@ public class NewRegistryWindow extends JFrame {
         revalidate();
         repaint();
     }
+
 
     private void go1() {
         Path protPath = Paths.get(path2.getText());
@@ -143,6 +159,7 @@ public class NewRegistryWindow extends JFrame {
         revalidate();
         repaint();
     }
+
 
     private void go2() {
         try {
@@ -163,6 +180,7 @@ public class NewRegistryWindow extends JFrame {
             JOptionPane.showMessageDialog(this, ex.toString());
         }
     }
+
 
     private void requestKey(final Path sharedFolderPath) {
 
@@ -247,6 +265,7 @@ public class NewRegistryWindow extends JFrame {
         }
     }
 
+
     private void addInstance(SecretKey encryptionKey/*, SecretKey integrityKey*/, String algorithm, boolean isANewDirectory) {
         try {
             PbxPair pair =
@@ -270,6 +289,7 @@ public class NewRegistryWindow extends JFrame {
         }
     }
 
+
     @Override
     public void dispose() {
         if (firstTime && usedCloseButton) {
@@ -288,6 +308,7 @@ public class NewRegistryWindow extends JFrame {
             super.dispose();
         }
     }
+
 
     /**
      * The card that is used to set the shared folder's and the prot folder's paths.
@@ -355,10 +376,12 @@ public class NewRegistryWindow extends JFrame {
                     component.requestFocusInWindow();
                 }
 
+
                 @Override
                 public void ancestorMoved(AncestorEvent e) {
                     // nothing here, not needed
                 }
+
 
                 @Override
                 public void ancestorRemoved(AncestorEvent e) {
@@ -489,12 +512,15 @@ public class NewRegistryWindow extends JFrame {
     private class PathChooserListener implements ActionListener {
 
         private final String fieldName;
+
         private final JTextField field;
+
 
         private PathChooserListener(final String fieldName, final JTextField field) {
             this.fieldName = fieldName;
             this.field = field;
         }
+
 
         @Override
         public void actionPerformed(ActionEvent e) {

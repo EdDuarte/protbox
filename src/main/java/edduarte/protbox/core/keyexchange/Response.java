@@ -19,7 +19,7 @@ package edduarte.protbox.core.keyexchange;
 import java.io.Serializable;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class Response implements Serializable {
@@ -27,8 +27,10 @@ public class Response implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public final String directoryAlgorithm;
+
     public final byte[] encryptedPairKey;
 //    public final byte[] encryptedIntegrityKey;
+
 
     public Response(String directoryAlgorithm, byte[] encryptedPairKey/*, byte[] encryptedIntegrityKey*/) {
         this.directoryAlgorithm = directoryAlgorithm;

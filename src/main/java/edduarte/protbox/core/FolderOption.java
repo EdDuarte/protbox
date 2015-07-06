@@ -17,12 +17,13 @@
 package edduarte.protbox.core;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public enum FolderOption {
 
     SHARED, PROT;
+
 
     public FolderOption inverse() {
 

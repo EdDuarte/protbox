@@ -26,7 +26,7 @@ import java.io.File;
 import java.nio.file.Path;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class FolderValidation {
@@ -36,6 +36,7 @@ public class FolderValidation {
     public static final int RESULT_CODE_EXISTING_REGISTRY = 1326326;
 
     public static final int RESULT_CODE_NEW_REGISTRY = 2326325;
+
 
     public static int validate(Component window, Path protPath, Path sharedPath, boolean isChangingProtPath) {
         if (protPath.equals(sharedPath) || protPath.startsWith(sharedPath)) {

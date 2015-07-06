@@ -26,13 +26,18 @@ import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class TrayApplet extends JDialog {
@@ -42,8 +47,11 @@ public class TrayApplet extends JDialog {
     private static TrayApplet instance;
 
     public final TrayIcon trayIcon;
+
     private final JPanel instanceList;
+
     private final JLabel statusText;
+
 
     private TrayApplet() {
         super();
@@ -119,10 +127,12 @@ public class TrayApplet extends JDialog {
         this.addWindowFocusListener(new WindowFocusListener() {
             private boolean gained = false;
 
+
             @Override
             public void windowGainedFocus(WindowEvent e) {
                 gained = true;
             }
+
 
             @Override
             public void windowLostFocus(WindowEvent e) {
@@ -201,8 +211,11 @@ public class TrayApplet extends JDialog {
         UPDATING(Constants.getAsset("vfl3Wt7C.gif"), Constants.getAsset("sync.png"), "Updating (<EXTRA>)...");
 
         private BufferedImage trayIcon;
+
         private BufferedImage dialogIcon;
+
         private String msg;
+
 
         private TrayStatus(BufferedImage trayIcon, BufferedImage dialogIcon, String message) {
             this.trayIcon = trayIcon;
@@ -214,14 +227,18 @@ public class TrayApplet extends JDialog {
 
     private class TrayClickListener extends MouseAdapter implements ActionListener {
         JDialog frame;
+
         int delay;
+
         boolean wasDoubleClick;
+
 
         public TrayClickListener(JDialog frame, int delay) {
             this.frame = frame;
             this.delay = delay;
             wasDoubleClick = false;
         }
+
 
         private Rectangle getScreenBoundsAt(Point pos) {
             GraphicsDevice gd = getGraphicsDeviceAt(pos);
@@ -238,6 +255,7 @@ public class TrayApplet extends JDialog {
             }
             return bounds;
         }
+
 
         private GraphicsDevice getGraphicsDeviceAt(Point pos) {
             GraphicsDevice device = null;
@@ -261,6 +279,7 @@ public class TrayApplet extends JDialog {
             }
             return device;
         }
+
 
         @Override
         public void mouseClicked(final MouseEvent e) {
@@ -293,6 +312,7 @@ public class TrayApplet extends JDialog {
             timer.setRepeats(false);
             timer.start();
         }
+
 
         @Override
         public void actionPerformed(ActionEvent e) {

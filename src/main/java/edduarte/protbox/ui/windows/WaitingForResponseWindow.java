@@ -25,12 +25,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public class WaitingForResponseWindow extends JFrame {
 
     private final Timer displayTimer;
+
 
     private WaitingForResponseWindow() {
         super();
@@ -58,7 +59,9 @@ public class WaitingForResponseWindow extends JFrame {
 
         ActionListener listener = new ActionListener() {
             private int i = 0;
+
             private int min = 2;
+
 
             @Override
             public void actionPerformed(ActionEvent event) {
@@ -78,9 +81,11 @@ public class WaitingForResponseWindow extends JFrame {
         this.setVisible(true);
     }
 
+
     public static WaitingForResponseWindow getInstance() {
         return new WaitingForResponseWindow();
     }
+
 
     @Override
     public void dispose() {

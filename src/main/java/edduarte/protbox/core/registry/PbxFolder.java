@@ -27,14 +27,16 @@ import java.util.stream.Stream;
  * variables as {@link PbxEntry}, a folder is also represented by a list of other sub-folders and a
  * list of other sub-files contained in this folder.
  *
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 2.0
  */
 public final class PbxFolder extends PbxEntry implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private final Set<PbxFolder> subFolders;
+
     private final Set<PbxFile> subFiles;
+
 
     PbxFolder(final PReg parentRegistry,
               final PbxFolder parentFolder,

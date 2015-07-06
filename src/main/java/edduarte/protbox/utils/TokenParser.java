@@ -21,16 +21,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * @author Eduardo Duarte (<a href="mailto:eduardo.miguel.duarte@gmail.com">eduardo.miguel.duarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
  * @version 1.0
  */
 public class TokenParser {
 
     private final Map<String, String> tokenData;
 
+
     private TokenParser(Map<String, String> tokenData) {
         this.tokenData = tokenData;
     }
+
 
     public static TokenParser parse(X509Certificate certificate) {
         String subjectDN = certificate.getSubjectDN().getName();
@@ -46,9 +48,11 @@ public class TokenParser {
         return new TokenParser(map);
     }
 
+
     public String getUserName() {
         return tokenData.get("CN");
     }
+
 
     public String getSerialNumber() {
         return tokenData.get("SERIALNUMBER");
