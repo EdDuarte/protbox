@@ -1,4 +1,4 @@
-![Logo](src/main/resources/edduarte/protbox/splash.png)
+![Logo](src/main/resources/com/edduarte/protbox/splash.png)
 
 ## Paper
 Secure and trustworthy file sharing over cloud storage using eID tokens [(link)](http://arxiv.org/abs/1501.03139)  
@@ -29,7 +29,7 @@ mvn package
 java -jar target/protbox-2.0-app.jar
 ```
 
-Alternatively, download the [v2.0 release](https://github.com/edduarte/protbox/releases/tag/v2.0), unpack the compressed file and use the following command:
+Alternatively, download the [v2.0 release](https://github.com/com.edduarte/protbox/releases/tag/v2.0), unpack the compressed file and use the following command:
 
 ```
 java -jar protbox-2.0-app.jar
