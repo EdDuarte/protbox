@@ -1,7 +1,7 @@
 ![Logo](src/main/resources/com/edduarte/protbox/splash.png)
 
 ## Paper
-Secure and trustworthy file sharing over cloud storage using eID tokens [(link)](http://arxiv.org/abs/1501.03139)  
+[Secure and trustworthy file sharing over cloud storage using eID tokens](http://arxiv.org/abs/1501.03139)  
 Lecture Notes in Informatics (LNI), Proceedings - Series of the Gesellschaft fur Informatik (GI), Volume P-237, 2014, Pages 73-84  
 Open Identity Summit 2014; Stuttgart; Germany; 4 November 2014 through 6 November 2014; Code 109544
 
