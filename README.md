@@ -26,13 +26,13 @@ To run the application, use the following commands on the source folder:
 
 ```
 mvn package
-java -jar target/protbox-2.0-app.jar
+java -jar target/protbox-3.0.2-app.jar
 ```
 
-Alternatively, download the [v2.0 release](https://github.com/com.edduarte/protbox/releases/tag/v2.0), unpack the compressed file and use the following command:
+Alternatively, download the [3.0.2 release](https://github.com/edduarte/protbox/releases/tag/3.0.2), unpack the compressed file and use the following command:
 
 ```
-java -jar protbox-2.0-app.jar
+java -jar protbox-3.0.2-app.jar
 ```
 
 The application will need to know where to find the PKCS#11 provider that is capable of reading the eID token to be used. In order to include support for PKCS#11 providers in the application, a configuration file must be added to the 'providers' folder (in the same folder as the jar file) with the suffix '.config' and the following contents:
