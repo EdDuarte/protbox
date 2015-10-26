@@ -34,7 +34,7 @@ import java.util.TimerTask;
 import java.util.function.Consumer;
 
 /**
- * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:ed@edduarte.com">ed@edduarte.com</a>)
  * @version 2.0
  */
 public class ResponseWatcher extends BaseWatcher {

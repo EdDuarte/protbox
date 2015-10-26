@@ -32,7 +32,7 @@ import java.awt.event.KeyListener;
  * or typed. The relevant method in the listener
  * object is then invoked, and the <code>KeyEvent</code> is passed to it.
  *
- * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:ed@edduarte.com">ed@edduarte.com</a>)
  * @see java.awt.event.KeyAdapter
  * @see java.awt.event.KeyEvent
  * @see <a href="http://java.sun.com/docs/books/tutorial/post1.0/ui/keylistener.html">Tutorial: Writing a Key Listener</a>

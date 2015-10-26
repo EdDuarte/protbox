@@ -30,10 +30,8 @@
     <developers>
         <developer>
             <id>edduarte</id>
-            <name>Eduardo Duarte</name>
-            <email>emod@ua.pt</email>
-            <organization>Universidade de Aveiro</organization>
-            <organizationUrl>http://www.ua.pt</organizationUrl>
+            <name>Ed Duarte</name>
+            <email>ed@edduarte.com</email>
             <roles>
                 <role>architect</role>
                 <role>developer</role>
@@ -41,10 +39,6 @@
             <timezone>0</timezone>
         </developer>
     </developers>
-    <organization>
-        <name>Universidade de Aveiro</name>
-        <url>http://www.ua.pt</url>
-    </organization>
 
     <build>
         <plugins>

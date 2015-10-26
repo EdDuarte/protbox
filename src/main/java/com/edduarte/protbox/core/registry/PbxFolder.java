@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  * variables as {@link PbxEntry}, a folder is also represented by a list of other sub-folders and a
  * list of other sub-files contained in this folder.
  *
- * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:ed@edduarte.com">ed@edduarte.com</a>)
  * @version 2.0
  */
 public final class PbxFolder extends PbxEntry implements Serializable {

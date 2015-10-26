@@ -20,7 +20,7 @@ import java.io.File;
 import java.io.Serializable;
 
 /**
- * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:ed@edduarte.com">ed@edduarte.com</a>)
  * @version 2.0
  */
 public class SavedRegistry implements Serializable {

@@ -21,7 +21,7 @@ import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
 
 /**
- * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:ed@edduarte.com">ed@edduarte.com</a>)
  * @version 2.0
  */
 public class PbxUser implements Serializable {

@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * variables as {@link PbxEntry}, a PbxFile is also represented by a set of snapshots, each one
  * representing a past state of the file's data, size and last modified date.
  *
- * @author Ed Duarte (<a href="mailto:edmiguelduarte@gmail.com">edmiguelduarte@gmail.com</a>)
+ * @author Ed Duarte (<a href="mailto:ed@edduarte.com">ed@edduarte.com</a>)
  * @version 2.0
  */
 public final class PbxFile extends PbxEntry implements Serializable {
