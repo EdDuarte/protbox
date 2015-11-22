@@ -19,7 +19,7 @@ The strong authentication of people, which is used to enforce the access control
 
 Protbox randomly generates and uses a key per folder to protect all its contents, including files and sub-directories. Files are encrypted with AES and their integrity is ensured with HMAC-SHA512. Encrypted file names, which contain bytes that are not acceptable for naming files in existing file systems, are coded in a modified Base64 alphabet (formed by letters, decimal digits, underscore, hyphen and dot), which should work in most file systems.
 
-## Getting Started
+# Getting Started
 To run the application, use the following commands on the source folder:
 
 ```
