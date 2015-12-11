@@ -3,7 +3,7 @@
 Protbox is a multi-platform application that aims to introduce confidentiality and access control to data stored in existing cloud storage services. It features a background folder synchronization engine and a graphical user interface for dealing with key distribution requests. It was successfully tested in both Linux and Windows with three major cloud storage providers: Dropbox, OneDrive and Google Drive.
 
 # Publication
-** Secure and trustworthy file sharing over cloud storage using eID tokens **  
+__Secure and trustworthy file sharing over cloud storage using eID tokens__  
 Lecture Notes in Informatics (LNI), Proceedings - Series of the Gesellschaft fur Informatik (GI), Volume P-237, 2014, Pages 73-84  
 Open Identity Summit 2014; Stuttgart; Germany; 4 November 2014 through 6 November 2014; Code 109544  
 [Publication webpage](http://edduarte.com/talks/openidentity2014/)
