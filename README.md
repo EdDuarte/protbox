@@ -2,13 +2,6 @@
 
 Protbox is a multi-platform application that aims to introduce confidentiality and access control to data stored in existing cloud storage services. It features a background folder synchronization engine and a graphical user interface for dealing with key distribution requests. It was successfully tested in both Linux and Windows with three major cloud storage providers: Dropbox, OneDrive and Google Drive.
 
-# Publication
-__Secure and trustworthy file sharing over cloud storage using eID tokens__  
-Lecture Notes in Informatics (LNI), Proceedings - Series of the Gesellschaft fur Informatik (GI), Volume P-237, 2014, Pages 73-84  
-Open Identity Summit 2014; Stuttgart; Germany; 4 November 2014 through 6 November 2014; Code 109544  
-[Publication webpage](http://edduarte.com/talks/openidentity2014/)
-
-# Description
 Confidentiality is provided in a transparent way, similarly to the synchronization with the cloud repositories. Confidential data can be made accessible to others sharing the same cloud folder by means of signed requests exchanged through the same cloud storage; no extra central services are used.
 
 The secure sharing includes three different protection attributes:
@@ -19,6 +12,15 @@ The secure sharing includes three different protection attributes:
 The strong authentication of people, which is used to enforce the access control to the shared data, relies on the exploitation of nowadays existing electronic, personal identity tokens (eIDs for short).
 
 Protbox randomly generates and uses a key per folder to protect all its contents, including files and sub-directories. Files are encrypted with AES and their integrity is ensured with HMAC-SHA512. Encrypted file names, which contain bytes that are not acceptable for naming files in existing file systems, are coded in a modified Base64 alphabet (formed by letters, decimal digits, underscore, hyphen and dot), which should work in most file systems.
+
+
+# Publication
+__Secure and trustworthy file sharing over cloud storage using eID tokens__  
+Lecture Notes in Informatics (LNI), Proceedings - Series of the Gesellschaft fur Informatik (GI), Volume P-237, 2014, Pages 73-84  
+Open Identity Summit 2014; Stuttgart; Germany; 4 November 2014 through 6 November 2014; Code 109544  
+
+[You can find more info about Protbox and all the links to this publication and talk slides on my blog](https://edduarte.com/protbox).
+
 
 # Getting Started
 To run the application, use the following commands on the source folder:
