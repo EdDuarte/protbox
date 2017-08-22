@@ -19,7 +19,7 @@ __Secure and trustworthy file sharing over cloud storage using eID tokens__
 Lecture Notes in Informatics (LNI), Proceedings - Series of the Gesellschaft fur Informatik (GI), Volume P-237, 2014, Pages 73-84  
 Open Identity Summit 2014; Stuttgart; Germany; 4 November 2014 through 6 November 2014; Code 109544  
 
-[You can find more info about Protbox and all the links to this publication and talk slides on my blog](https://edduarte.com/protbox).
+You can find all the links to this publication and talk slides on my website: [https://edduarte.com/protbox](https://edduarte.com/protbox).
 
 
 # Getting Started
